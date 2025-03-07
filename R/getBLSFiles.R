@@ -39,7 +39,7 @@ getBLSFiles <- function(data_source, email) {
   } else if (data_source == "jolts") {
     files <- c("jt", "data.1.AllItems", "series", "industry", "state")
   } else if (data_source == "cps") {
-    files <- c("ln", "data.1.AllData", "series", "ages", "occupation", "race", "sexs", "born")
+    files <- c("ln", "data.1.AllData", "series", "ages", "occupation", "race", "sexs", "born", "lfst")
   } else if (data_source == "ces") {
     files <- c("ce", "data.0.AllCESSeries", "series", "datatype", "supersector", "industry")
   } else if (data_source == "ces_allemp") {
