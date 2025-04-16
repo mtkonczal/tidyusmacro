@@ -26,7 +26,7 @@
 #' @export
 getBLSFiles <- function(data_source, email) {
   # Validate the data source input
-  available_sources <- c("cpi", "eci", "jolts", "cps", "ces", "averageprice", "food")
+  available_sources <- c("cpi", "eci", "jolts", "cps", "ces", "averageprice", "food", "ces_allemp", "ces_total")
   if (!tolower(data_source) %in% available_sources) {
     stop("Invalid data source. Choose one of: ", paste(available_sources, collapse = ", "))
   }
@@ -39,9 +39,13 @@ getBLSFiles <- function(data_source, email) {
   } else if (data_source == "jolts") {
     files <- c("jt", "data.1.AllItems", "series", "industry", "state")
   } else if (data_source == "cps") {
-    files <- c("ln", "data.1.AllData", "series", "ages", "occupation", "race", "sexs", "born")
+    files <- c("ln", "data.1.AllData", "series", "ages", "occupation", "race", "sexs", "born", "lfst")
   } else if (data_source == "ces") {
     files <- c("ce", "data.0.AllCESSeries", "series", "datatype", "supersector", "industry")
+  } else if (data_source == "ces_allemp") {
+    files <- c("ce", "data.01a.CurrentSeasAE", "series", "datatype", "supersector", "industry")
+  } else if (data_source == "ces_total") {
+    files <- c("ce", "data.00a.TotalNonfarm.Employment", "series", "datatype", "supersector", "industry")
   } else if (data_source == "averageprice") {
     files <- c("ap", "data.0.Current", "series", "area", "item")
   } else if (data_source == "food") {
