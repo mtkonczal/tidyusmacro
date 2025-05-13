@@ -37,7 +37,7 @@ getBLSFiles <- function(data_source, email) {
   } else if (data_source == "eci") {
     files <- c("ci", "data.1.AllData", "series", "industry", "owner", "subcell", "occupation", "periodicity", "estimate")
   } else if (data_source == "jolts") {
-    files <- c("jt", "data.1.AllItems", "series", "industry", "state")
+    files <- c("jt", "data.1.AllItems", "series", "industry", "state", "dataelement")
   } else if (data_source == "cps") {
     files <- c("ln", "data.1.AllData", "series", "ages", "occupation", "race", "sexs", "born", "lfst")
   } else if (data_source == "ces") {

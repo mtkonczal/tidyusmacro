@@ -2,35 +2,69 @@
 % Please edit documentation in R/getFRED.R
 \name{getFRED}
 \alias{getFRED}
-\title{Download and Merge FRED Data Series with Modern Tools}
+\title{Download and Merge FRED Series}
 \usage{
-getFRED(variables, keep_all = TRUE, rename_variables = NULL, lagged = NULL)
+getFRED(..., keep_all = TRUE, rename_variables = NULL, lagged = NULL)
 }
 \arguments{
-\item{variables}{A character vector of FRED series IDs.}
+\item{...}{One or more FRED series IDs.  Each element may be either
+\describe{
+\item{Unnamed character string}{The raw FRED ticker; column keeps the
+lowercase ticker name, e.g.\ \code{"UNRATE"}.}
+\item{Named character string}{The value is the FRED ticker and the name
+becomes the column label, e.g.\ \code{payroll = "PAYEMS"}.}
+}
+You may also pass a single character vector (named or unnamed) for
+compatibility with older code.}
 
-\item{keep_all}{Logical. If TRUE, performs a full (outer) merge (keeping all dates);
-if FALSE, uses an inner merge.}
+\item{keep_all}{Logical.  \code{TRUE} (default) performs a full join that
+keeps all dates across series; \code{FALSE} performs an inner join.}
 
-\item{rename_variables}{A character vector of new names for the series. If not provided,
-the series names (in lowercase) will be used.}
+\item{rename_variables}{Optional character vector of new column names (one
+per series), retained for backward compatibility.  Supply \emph{either}
+this argument \emph{or} names in \code{...}, not both.}
 
-\item{lagged}{A logical vector (or single logical) indicating whether to compute lagged
-returns for each series. The lagged return is computed as:
-\deqn{(current\ value / previous\ value) - 1.}}
+\item{lagged}{Logical scalar or logical vector.  If \code{TRUE} (or the
+corresponding element is \code{TRUE}), the series is replaced by its
+one‑period percentage change \eqn{(x_t / x_{t-1}) - 1}.  Recycled to match
+the number of series if length 1.}
 }
 \value{
-A data frame containing the merged FRED series.
+A tibble with a \code{date} column and one column per requested
+series.
 }
 \description{
-Downloads one or more FRED series from the St. Louis Fed website, optionally computes
-lagged percentage changes, renames the variable columns, and merges all series by date.
+A flexible wrapper that downloads one or more data series from the St. Louis
+Fed (FRED) API, optionally computes one‑period percentage changes, and merges
+them into a tidy tibble keyed by \code{date}.
+}
+\details{
+You may supply the series in two ways:
+\itemize{
+\item \strong{Natural “\code{...}” style}:
+\code{getFRED(unrate = "UNRATE", payroll = "PAYEMS")}.
+Named arguments give friendly column names; unnamed arguments keep the
+(lower‑case) ticker as the column name.
+\item \strong{Legacy style}: pass a single (optionally named) character
+vector—e.g.\ \code{c(unrate = "UNRATE", payroll = "PAYEMS")}—and/or use
+the \code{rename_variables=} argument.  This remains supported for
+backward compatibility.
+}
+
+If you provide names in \code{...} \emph{and} a non‑\code{NULL}
+\code{rename_variables} vector, the function stops and prompts you to choose
+a single naming method.
 }
 \examples{
 \dontrun{
-  # Download GDP (without lagging) and Unemployment Rate (with lagging)
-  df <- getFRED(variables = c("GDP", "UNRATE"),
-                rename_variables = c("gdp", "unrate"),
-                lagged = c(FALSE, TRUE))
+  # New interface
+  getFRED(unrate = "UNRATE", payroll = "PAYEMS")
+
+  # Multiple unnamed series (columns become 'unrate' and 'payems')
+  getFRED("UNRATE", "PAYEMS")
+
+  # Back‑compatibility: legacy call still works
+  getFRED(c(unrate = "UNRATE", payroll = "PAYEMS"),
+          lagged = c(TRUE, FALSE))
 }
 }
