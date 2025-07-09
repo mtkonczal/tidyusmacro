@@ -15,6 +15,7 @@
 #' @return A numeric vector of projected values, with `NA` for rows where the date is before `start_date`.
 #'
 #' @import dplyr rlang
+#' @importFrom stats lm as.formula predict
 #' @export
 logLinearProjection <- function(tbl, date_col, value_col, start_date, end_date, group_col = NA) {
   # Convert start_date and end_date to Date objects

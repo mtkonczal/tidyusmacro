@@ -12,7 +12,7 @@ A tibble with 250 rows and 2 variables:
 }
 }
 \source{
-\link{Data incoming on this}
+\url{https://www.bls.gov/opub/hom/ces/calculation.htm}
 }
 \usage{
 cesDiffusionIndex
@@ -29,7 +29,5 @@ classifications to descriptive labels.
 # Load the dataset
 data(cesDiffusionIndex)
 
-# Display the first few rows
-head(cesDiffusionIndex)
 }
 \keyword{datasets}

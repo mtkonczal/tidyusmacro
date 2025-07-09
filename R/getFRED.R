@@ -56,6 +56,7 @@
 #' @importFrom readr read_csv cols
 #' @importFrom dplyr full_join inner_join as_tibble
 #' @importFrom purrr pmap reduce compact
+#' @importFrom utils head
 #' @export
 getFRED <- function(...,
                     keep_all = TRUE,

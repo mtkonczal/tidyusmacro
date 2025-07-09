@@ -9,6 +9,9 @@ getPCEInflation(frequency = "M", NIPA_data = NA)
 \arguments{
 \item{frequency}{Character string indicating the frequency of the data.
 Defaults to \code{"M"} (monthly).}
+
+\item{NIPA_data}{Optional data frame. If provided, it will be used as the raw NIPA dataset
+instead of loading fresh data with \code{getNIPAFiles()}.'}
 }
 \value{
 A \code{tbl_df} (data frame) containing the PCE data with calculated variables.

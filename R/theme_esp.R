@@ -1,127 +1,82 @@
-# =====================================================================
-#  Economic Security Project ggplot2 theme & scales
-#  (ggthemes‑style structure)
-# =====================================================================
+#' ESP Theme and Color Scales
+#'
+#' Custom theme and color palette for Economic Security Project graphics.
+#'
+#' @param base_family Base font family for the theme. Defaults to "Public Sans".
+#' @param ... Passed to the underlying ggplot2 scale functions.
+#'
+#' @return A ggplot2 theme or scale object.
+#'
+#' @name esp_theme
+#' @importFrom ggplot2 theme_minimal theme element_rect element_blank element_line element_text scale_color_manual scale_fill_manual
+#' @importFrom grid unit
+#' @export
+theme_esp <- function(base_family = "Public Sans") {
+  ggplot2::theme_minimal(base_family = base_family) +
+    ggplot2::theme(
+      # Background
+      plot.background = ggplot2::element_rect(fill = "#f4f2e4", color = NA),
+      panel.background = ggplot2::element_rect(fill = "#f4f2e4", color = NA),
 
-# ---------------------------------------------------------------------
-#  Brand colours (hex) -------------------------------------------------
-# ---------------------------------------------------------------------
-.esp_cols <- c(
-  "Warm Navy"  = "#2c3254",
-  "Warm Red"   = "#ff8361",
-  "Soft Green" = "#70ad8f",
-  "Deep Purple"= "#472b51"
+      # Remove gridlines
+      panel.grid.major = ggplot2::element_blank(),
+      panel.grid.minor = ggplot2::element_blank(),
+
+      # Axis lines and ticks
+      axis.line = ggplot2::element_line(color = "black", size = 0.5),
+      axis.ticks = ggplot2::element_line(color = "black", size = 0.5),
+      axis.ticks.length = grid::unit(5, "pt"),
+
+      # Titles and text
+      plot.title = ggplot2::element_text(size = 25, face = "bold", family = base_family, color = "black"),
+      plot.subtitle = ggplot2::element_text(size = 15, family = base_family, color = "black"),
+      plot.caption = ggplot2::element_text(size = 10, face = "italic", family = base_family, color = "black"),
+      axis.text = ggplot2::element_text(size = 12, face = "bold", family = base_family, color = "black"),
+      strip.text = ggplot2::element_text(face = "bold", size = 10, hjust = 0.5, family = base_family, color = "black"),
+
+      # Remove axis titles and legend
+      axis.title.x = ggplot2::element_blank(),
+      axis.title.y = ggplot2::element_blank(),
+      legend.position = "none",
+      legend.title = ggplot2::element_blank(),
+      legend.text = ggplot2::element_text(size = 12, family = base_family, color = "black"),
+
+      # Title alignment
+      plot.title.position = "plot"
+    )
+}
+
+#' ESP Color Palette
+#'
+#' Named vector of ESP-branded colors.
+#' @export
+esp_pal <- c(
+  "Warm Navy" = "#2c3254",
+  "Warm Red"  = "#ff8361",
+  "Soft Green" = "#70ad8f"
 )
 
-# ---------------------------------------------------------------------
-#  THEME ---------------------------------------------------------------
-# ---------------------------------------------------------------------
-#' Theme inspired by Economic Security Project graphics
+#' ESP Primary Color (Navy)
 #'
-#' A minimal theme with ESP brand colours, grid, and typography.  It builds on
-#' **\link[ggplot2]{theme_minimal}**.  Use together with
-#' [scale_colour_esp()] / [scale_fill_esp()].
-#'
-#' @inheritParams ggplot2::theme_grey
-#' @param background `"white"` (default) or `"beige"`.
-#' @family themes esp
+#' A standalone color value for quick use.
 #' @export
-#' @importFrom grid unit
-theme_esp <- function(base_size   = 12,
-                      base_family = "Publico Banner",
-                      background  = c("beige", "white")) {
+esp_navy <- esp_pal["Warm Navy"]
 
-  background <- match.arg(background)
-  bg_colour  <- if (background == "white") "#ffffff" else "#f4f2e4"
-
-  (ggplot2::theme_classic(base_size = base_size,
-                          base_family = base_family) +
-      ggplot2::theme(
-        # apply the chosen background colour
-        plot.background  = ggplot2::element_rect(fill = bg_colour, colour = NA),
-        panel.background = ggplot2::element_rect(fill = bg_colour, colour = NA),
-
-        line   = ggplot2::element_line(colour = "#2c3254"),
-        rect   = ggplot2::element_rect(fill = bg_colour, colour = NA),
-        text   = ggplot2::element_text(colour = .esp_cols["Warm Navy"]),
-
-        axis.title = ggplot2::element_text(face = "bold"),
-        axis.text  = ggplot2::element_text(),
-        axis.ticks = ggplot2::element_blank(),
-        axis.line  = ggplot2::element_blank(),
-
-        legend.position = "right",
-
-        plot.title.position = "plot",
-
-        legend.title = element_blank(),
-
-        panel.grid.major = ggplot2::element_line(
-          colour = scales::alpha(.esp_cols["Warm Navy"], 0.1)),
-        panel.grid.minor = ggplot2::element_blank(),
-
-        plot.title = ggplot2::element_text(
-          hjust = 0, size = ggplot2::rel(1.4), face = "bold"),
-        plot.margin = grid::unit(c(1, 1, 1, 1), "lines"),
-
-        strip.background = ggplot2::element_rect(
-          fill = .esp_cols["Warm Navy"]),
-        strip.text = ggplot2::element_text(
-          colour = "white", face = "bold")
-      ))
+#' ESP Discrete Color Scale
+#' @rdname esp_theme
+#' @export
+scale_color_esp <- function(...) {
+  ggplot2::scale_color_manual(values = esp_pal, ...)
 }
 
-# ---------------------------------------------------------------------
-#  PALETTE -------------------------------------------------------------
-# ---------------------------------------------------------------------
-#' ESP colour palette (discrete)
-#'
-#' Returns a manual palette function using the four ESP brand colours in order:
-#' Warm Navy, Warm Red, Soft Green, Deep Purple.
-#'
-#' @family colour esp
-#' @export
-esp_pal <- function() {
-  values <- unname(.esp_cols)
-  max_n  <- length(values)
-  f <- scales::manual_pal(values)
-  attr(f, "max_n") <- max_n
-  f
-}
-
-# ---------------------------------------------------------------------
-#  COLOUR & FILL SCALES ------------------------------------------------
-# ---------------------------------------------------------------------
-#' ESP colour scales
-#'
-#' Discrete colour and fill scales using ESP brand colours.
-#'
-#' @inheritParams ggplot2::scale_colour_hue
-#' @family colour esp
-#' @rdname scale_esp
-#' @seealso [theme_esp()] for examples.
-#' @export
-scale_colour_esp <- function(...) {
-  ggplot2::discrete_scale("colour", "esp", esp_pal(), ...)
-}
-
-#' @rdname scale_esp
-#' @export
-scale_color_esp <- scale_colour_esp   # alias (US spelling)
-
-#' @rdname scale_esp
+#' ESP Discrete Fill Scale
+#' @rdname esp_theme
 #' @export
 scale_fill_esp <- function(...) {
-  ggplot2::discrete_scale("fill", "esp", esp_pal(), ...)
+  ggplot2::scale_fill_manual(values = esp_pal, ...)
 }
 
-#' Warm Navy brand colour
-#'
-#' Returns the hex code `"#2c3254"`.
-#'
-#' @return Character vector of length 1.
-#' @family colour esp
+#' Alias for American/British spelling
+#' @rdname esp_theme
 #' @export
-esp_navy <- function() {
-  "#2c3254"
-}
+scale_colour_esp <- scale_color_esp

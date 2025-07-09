@@ -16,6 +16,8 @@
 #'
 #' @param frequency Character string indicating the frequency of the data.
 #'                  Defaults to \code{"M"} (monthly).
+#' @param NIPA_data Optional data frame. If provided, it will be used as the raw NIPA dataset
+#'                  instead of loading fresh data with \code{getNIPAFiles()}.'
 #'
 #' @return A \code{tbl_df} (data frame) containing the PCE data with calculated variables.
 #'

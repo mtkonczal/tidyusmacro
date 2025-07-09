@@ -12,12 +12,10 @@
 #'   \item{ces_industry_title}{A character vector containing the titles of the industries (e.g., "Logging").}
 #' }
 #'
-#' @source [Data incoming on this]
+#' @source \url{https://www.bls.gov/opub/hom/ces/calculation.htm}
 #'
 #' @examples
 #' # Load the dataset
 #' data(cesDiffusionIndex)
 #'
-#' # Display the first few rows
-#' head(cesDiffusionIndex)
 "cesDiffusionIndex"

@@ -26,7 +26,7 @@
 #' @export
 getBLSFiles <- function(data_source, email) {
   # Validate the data source input
-  available_sources <- c("cpi", "eci", "jolts", "cps", "ces", "averageprice", "food", "ces_allemp", "ces_total")
+  available_sources <- c("cpi", "eci", "jolts", "cps", "ces", "averageprice", "food", "ces_allemp", "ces_total", "se", "su")
   if (!tolower(data_source) %in% available_sources) {
     stop("Invalid data source. Choose one of: ", paste(available_sources, collapse = ", "))
   }
@@ -50,6 +50,10 @@ getBLSFiles <- function(data_source, email) {
     files <- c("ap", "data.0.Current", "series", "area", "item")
   } else if (data_source == "food") {
     files <- c("ap", "data.3.Food", "series", "area", "item")
+  } else if (data_source == "se") {
+    files <- c("sm", "data.0.Current", "series", "industry", "data_type", "supersector", "state", "area")
+  } else if (data_source == "su") {
+    files <- c("la", "data.1.CurrentS", "series", "state_region_divison", "measure", "area", "area_type")
   }
 
   # Construct the base URL: files are stored at
