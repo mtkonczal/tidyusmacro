@@ -1,4 +1,4 @@
-Package: govMacroTools
+Package: tidyusmacro
 Title: Government Macro Data: Download and Clean U.S. Economic Indicators
 Version: 0.1.0
 Authors@R: 
