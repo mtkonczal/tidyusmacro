@@ -1,82 +1,87 @@
-#' Log-Linear Projection Library
+#' Log-Linear Projection (tidy-eval)
 #'
-#' This function performs a log-linear projection on a given data frame (or tibble)
-#' using a calibration period defined by `start_date` and `end_date`.
-#' It fits a log-linear model (`log(value) ~ t`) on the calibration data and then applies
-#' the model to all dates on or after `start_date`.
+#' Fits a log-linear trend \eqn{\log(value) ~ t} on a calibration window and
+#' projects it forward for all rows on/after `start_date`. Accepts bare column
+#' names for `date`, `value`, and an optional `group`.
 #'
-#' @param tbl A data frame or tibble containing the data.
-#' @param date_col A character string specifying the column name in `tbl` that contains dates.
-#' @param value_col A character string specifying the column name in `tbl` that contains the values to be projected.
-#' @param start_date A character string or Date specifying the start date for the calibration period.
-#' @param end_date A character string or Date specifying the end date for the calibration period.
-#' @param group_col An optional character string specifying a column name in `tbl` to group by before performing projections.
+#' @param tbl A data frame or tibble.
+#' @param date Bare column name for the date variable (coercible to Date).
+#' @param value Bare column name for the numeric series to project.
+#' @param start_date Date or string coercible to `Date`; start of calibration.
+#' @param end_date Date or string coercible to `Date`; end of calibration.
+#' @param group Optional bare column name to group by before projecting.
 #'
-#' @return A numeric vector of projected values, with `NA` for rows where the date is before `start_date`.
+#' @return A numeric vector `projection` with `NA` before `start_date`, aligned
+#'   to the rows of `tbl` (and respecting grouping if supplied).
+#'
+#' @examples
+#' # Deterministic, fast example with an upward (log-linear) trend
+#' set.seed(123)
+#' n <- 16
+#' df <- data.frame(
+#'   date  = seq(as.Date("2000-01-01"), by = "quarter", length.out = n),
+#'   # upward trend on log-scale + small noise; strictly positive
+#'   value = exp(log(100) + 0.03 * (0:(n - 1)) + rnorm(n, sd = 0.02))
+#' )
+#'
+#' proj <- logLinearProjection(
+#'   df, date, value,
+#'   start_date = "2000-01-01",
+#'   end_date   = "2003-12-31"
+#' )
+#' head(proj)
 #'
 #' @import dplyr rlang
-#' @importFrom stats lm as.formula predict
+#' @importFrom stats lm predict
 #' @export
-logLinearProjection <- function(tbl, date_col, value_col, start_date, end_date, group_col = NA) {
-  # Convert start_date and end_date to Date objects
+logLinearProjection <- function(tbl, date, value, start_date, end_date, group = NULL) {
+  date_q  <- rlang::enquo(date)
+  value_q <- rlang::enquo(value)
+  group_q <- rlang::enquo(group)
+
   start_date <- as.Date(start_date)
   end_date   <- as.Date(end_date)
 
-  # Check if required columns exist in tbl
-  required_cols <- c(date_col, value_col)
-  if (!is.na(group_col)) {
-    required_cols <- c(required_cols, group_col)
-  }
+  # Normalize inputs: ensure we have Date + numeric working columns
+  df <- dplyr::mutate(
+    tbl,
+    ..date  = as.Date(!!date_q),
+    ..value = as.numeric(!!value_q)
+  )
 
-  if (!all(required_cols %in% colnames(tbl))) {
-    stop("One or more specified columns do not exist in 'tbl'.")
-  }
+  project_one <- function(d) {
+    # Calibration window (require positive values for log)
+    calib <- d %>%
+      dplyr::filter(..date >= start_date, ..date <= end_date) %>%
+      dplyr::mutate(t = as.numeric(..date - start_date)) %>%
+      dplyr::filter(is.finite(..value), ..value > 0)
 
-  # Ensure the date column is of Date type; if not, convert it
-  if (!inherits(tbl[[date_col]], "Date")) {
-    tbl[[date_col]] <- as.Date(tbl[[date_col]])
-  }
-
-  # Function to apply log-linear projection within each group
-  project_group <- function(data) {
-    date_sym <- rlang::sym(date_col)
-    value_sym <- rlang::sym(value_col)
-
-    # Filter for calibration period
-    calib <- data %>%
-      dplyr::filter(!!date_sym >= start_date, !!date_sym <= end_date) %>%
-      dplyr::mutate(t = as.numeric(!!date_sym - start_date))
-
-    # Fit the log-linear model if there is enough data
     if (nrow(calib) < 2) {
-      return(rep(NA_real_, nrow(data)))
-    }
-    model <- lm(as.formula(paste("log(", value_col, ") ~ t")), data = calib)
-
-    # Compute time variable and initialize projection
-    data <- data %>%
-      dplyr::mutate(t = as.numeric(!!date_sym - start_date))
-
-    projection <- rep(NA_real_, nrow(data))
-    valid_idx <- which(data$t >= 0)
-
-    if (length(valid_idx) > 0) {
-      log_preds <- predict(model, newdata = data.frame(t = data$t[valid_idx]))
-      projection[valid_idx] <- exp(log_preds)
+      return(rep(NA_real_, nrow(d)))
     }
 
-    return(projection)
+    fit <- stats::lm(log(..value) ~ t, data = calib)
+
+    d <- d %>% dplyr::mutate(t = as.numeric(..date - start_date))
+
+    proj <- rep(NA_real_, nrow(d))
+    idx  <- which(d$t >= 0)
+
+    if (length(idx) > 0) {
+      lp <- stats::predict(fit, newdata = data.frame(t = d$t[idx]))
+      proj[idx] <- exp(lp)
+    }
+    proj
   }
 
-  # Apply function with or without grouping
-  if (!is.na(group_col)) {
-    tbl <- tbl %>%
-      dplyr::group_by(!!rlang::sym(group_col)) %>%
-      dplyr::mutate(projection = project_group(pick(everything()))) %>%
+  if (!rlang::quo_is_null(group_q)) {
+    df <- df %>%
+      dplyr::group_by(!!group_q, .add = FALSE) %>%
+      dplyr::mutate(projection = project_one(dplyr::pick(dplyr::everything()))) %>%
       dplyr::ungroup()
   } else {
-    tbl$projection <- project_group(tbl)
+    df$projection <- project_one(df)
   }
 
-  return(tbl$projection)
+  df$projection
 }

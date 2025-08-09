@@ -27,7 +27,7 @@ to split the combined \code{TableId:LineNo} field into separate rows and columns
 it merges the datasets.
 }
 \examples{
-\dontrun{
+\donttest{
   nipadata <- getNIPAFiles(type = "Q")
 }
 

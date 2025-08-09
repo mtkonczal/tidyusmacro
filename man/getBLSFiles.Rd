@@ -25,7 +25,7 @@ if the period is "M13", the date is set to December 31; and for quarterly data (
 "Q1"–"Q4") the date is assigned as the last day of the quarter's final month.
 }
 \examples{
-\dontrun{
+\donttest{
   # Download CPI data using your email address
   bls_data <- getBLSFiles("cpi", "user@example.com")
 }

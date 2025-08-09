@@ -26,7 +26,7 @@ this argument \emph{or} names in \code{...}, not both.}
 
 \item{lagged}{Logical scalar or logical vector.  If \code{TRUE} (or the
 corresponding element is \code{TRUE}), the series is replaced by its
-one‑period percentage change \eqn{(x_t / x_{t-1}) - 1}.  Recycled to match
+one-period percentage change \eqn{(x_t / x_{t-1}) - 1}.  Recycled to match
 the number of series if length 1.}
 }
 \value{
@@ -34,8 +34,8 @@ A tibble with a \code{date} column and one column per requested
 series.
 }
 \description{
-A flexible wrapper that downloads one or more data series from the St. Louis
-Fed (FRED) API, optionally computes one‑period percentage changes, and merges
+A flexible wrapper that downloads one or more data series from the St. Louis
+Fed (FRED) API, optionally computes one-period percentage changes, and merges
 them into a tidy tibble keyed by \code{date}.
 }
 \details{
@@ -44,27 +44,24 @@ You may supply the series in two ways:
 \item \strong{Natural “\code{...}” style}:
 \code{getFRED(unrate = "UNRATE", payroll = "PAYEMS")}.
 Named arguments give friendly column names; unnamed arguments keep the
-(lower‑case) ticker as the column name.
+(lower-case) ticker as the column name.
 \item \strong{Legacy style}: pass a single (optionally named) character
 vector—e.g.\ \code{c(unrate = "UNRATE", payroll = "PAYEMS")}—and/or use
 the \code{rename_variables=} argument.  This remains supported for
 backward compatibility.
 }
 
-If you provide names in \code{...} \emph{and} a non‑\code{NULL}
+If you provide names in \code{...} \emph{and} a non-\code{NULL}
 \code{rename_variables} vector, the function stops and prompts you to choose
 a single naming method.
 }
 \examples{
-\dontrun{
-  # New interface
-  getFRED(unrate = "UNRATE", payroll = "PAYEMS")
+\donttest{
+# New interface
+getFRED(unrate = "UNRATE", payroll = "PAYEMS")
 
-  # Multiple unnamed series (columns become 'unrate' and 'payems')
-  getFRED("UNRATE", "PAYEMS")
+# Multiple unnamed series (columns become 'unrate' and 'payems')
+getFRED("UNRATE", "PAYEMS")
 
-  # Back‑compatibility: legacy call still works
-  getFRED(c(unrate = "UNRATE", payroll = "PAYEMS"),
-          lagged = c(TRUE, FALSE))
 }
 }

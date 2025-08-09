@@ -15,7 +15,7 @@
 #' @return A tibble containing the merged BLS data with an assigned date column.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #'   # Download CPI data using your email address
 #'   bls_data <- getBLSFiles("cpi", "user@example.com")
 #' }

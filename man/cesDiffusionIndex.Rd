@@ -12,7 +12,7 @@ A tibble with 250 rows and 2 variables:
 }
 }
 \source{
-\url{https://www.bls.gov/opub/hom/ces/calculation.htm}
+U.S. Bureau of Labor Statistics (BLS)
 }
 \usage{
 cesDiffusionIndex

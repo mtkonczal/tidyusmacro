@@ -13,7 +13,7 @@
 #'
 #' @return A data frame containing the merged and formatted NIPA data.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #'   nipadata <- getNIPAFiles(type = "Q")
 #' }
 #'

@@ -12,7 +12,7 @@
 #'   \item{ces_industry_title}{A character vector containing the titles of the industries (e.g., "Logging").}
 #' }
 #'
-#' @source \url{https://www.bls.gov/opub/hom/ces/calculation.htm}
+#' @source U.S. Bureau of Labor Statistics (BLS)
 #'
 #' @examples
 #' # Load the dataset

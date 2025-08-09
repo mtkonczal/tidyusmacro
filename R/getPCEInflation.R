@@ -23,7 +23,7 @@
 #'
 #' @importFrom dplyr select distinct
 #' @examples
-#' \dontrun{
+#' \donttest{
 #'   # Load monthly PCE data
 #'   pce_data <- getPCEInflation("M")
 #' }
