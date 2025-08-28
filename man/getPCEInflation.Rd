@@ -34,8 +34,8 @@ and calculates several period-over-period growth measures.
 }
 \examples{
 \donttest{
-  # Load monthly PCE data
-  pce_data <- getPCEInflation("M")
+# Load monthly PCE data
+pce_data <- getPCEInflation("M")
 }
 
 }

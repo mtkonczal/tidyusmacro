@@ -19,8 +19,9 @@ theme_esp <- function(base_family = "Public Sans") {
       panel.background = ggplot2::element_rect(fill = "#f4f2e4", color = NA),
 
       # Remove gridlines
-      panel.grid.major = ggplot2::element_blank(),
       panel.grid.minor = ggplot2::element_blank(),
+      panel.grid.major.y = ggplot2::element_line(color = "grey80"),
+      panel.grid.major.x = ggplot2::element_blank(),
 
       # Axis lines and ticks
       axis.line = ggplot2::element_line(color = "black", size = 0.5),
