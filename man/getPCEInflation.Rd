@@ -4,7 +4,7 @@
 \alias{getPCEInflation}
 \title{Load and Process Personal Consumption Expenditures (PCE) Data}
 \usage{
-getPCEInflation(frequency = "M", NIPA_data = NA)
+getPCEInflation(frequency = "M", NIPA_data = NULL)
 }
 \arguments{
 \item{frequency}{Character string indicating the frequency of the data.
@@ -34,8 +34,8 @@ and calculates several period-over-period growth measures.
 }
 \examples{
 \donttest{
-# Load monthly PCE data
-pce_data <- getPCEInflation("M")
+  # Load monthly PCE data
+  pce_data <- getPCEInflation("M")
 }
 
 }

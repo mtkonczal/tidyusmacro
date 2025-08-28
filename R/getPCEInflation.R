@@ -29,10 +29,10 @@
 #' }
 #'
 #' @export
-getPCEInflation <- function(frequency = "M", NIPA_data = NA) {
+getPCEInflation <- function(frequency = "M", NIPA_data = NULL) {
 
     # Load the full dataset using the specified frequency.
-  if(is.na(NIPA_data)){
+  if(is.null(NIPA_data)){
     full_data <- getNIPAFiles(type = frequency)
   } else{
     full_data <- NIPA_data
