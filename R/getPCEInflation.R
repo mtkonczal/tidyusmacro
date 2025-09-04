@@ -21,7 +21,8 @@
 #'
 #' @return A \code{tbl_df} (data frame) containing the PCE data with calculated variables.
 #'
-#' @importFrom dplyr select distinct
+#' @importFrom dplyr select distinct lag mutate left_join group_by filter ungroup
+#' @importFrom rlang .data
 #' @examples
 #' \donttest{
 #'   # Load monthly PCE data

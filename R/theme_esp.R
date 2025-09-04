@@ -29,7 +29,7 @@ theme_esp <- function(base_family = "Public Sans") {
       axis.ticks.length = grid::unit(5, "pt"),
 
       # Titles and text
-      plot.title = ggplot2::element_text(size = 25, face = "bold", family = base_family, color = "black"),
+      plot.title = ggplot2::element_text(size = 25, face = "bold", family = base_family, color = "black", margin = ggplot2::margin(b = 10, t = 10)),
       plot.subtitle = ggplot2::element_text(size = 15, family = base_family, color = "black"),
       plot.caption = ggplot2::element_text(size = 10, face = "italic", family = base_family, color = "black"),
       axis.text = ggplot2::element_text(size = 12, face = "bold", family = base_family, color = "black"),

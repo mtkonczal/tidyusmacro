@@ -2,47 +2,37 @@
 % Please edit documentation in R/logLinearProjection.R
 \name{logLinearProjection}
 \alias{logLinearProjection}
-\title{Log-Linear Projection (tidy-eval)}
+\title{Log-Linear Projection (data-masked, dplyr-native)}
 \usage{
-logLinearProjection(tbl, date, value, start_date, end_date, group = NULL)
+logLinearProjection(
+  date,
+  value,
+  start_date,
+  end_date,
+  group = NULL,
+  data = NULL
+)
 }
 \arguments{
-\item{tbl}{A data frame or tibble.}
-
 \item{date}{Bare column name for the date variable (coercible to Date).}
 
-\item{value}{Bare column name for the numeric series to project.}
+\item{value}{Bare column name for the positive numeric series to project.}
 
-\item{start_date}{Date or string coercible to \code{Date}; start of calibration.}
+\item{start_date}{Date or string coercible to Date; start of calibration.}
 
-\item{end_date}{Date or string coercible to \code{Date}; end of calibration.}
+\item{end_date}{Date or string coercible to Date; end of calibration.}
 
 \item{group}{Optional bare column name to group by before projecting.}
+
+\item{data}{Optional data frame. If omitted, uses the current data mask
+(e.g., inside \code{mutate()}) via \code{dplyr::cur_data_all()}.}
 }
 \value{
-A numeric vector \code{projection} with \code{NA} before \code{start_date}, aligned
-to the rows of \code{tbl} (and respecting grouping if supplied).
+A numeric vector \code{projection} aligned to the input rows; \code{NA}
+before \code{start_date}. Respects grouping if \code{group} is supplied.
 }
 \description{
-Fits a log-linear trend \eqn{\log(value) ~ t} on a calibration window and
-projects it forward for all rows on/after \code{start_date}. Accepts bare column
-names for \code{date}, \code{value}, and an optional \code{group}.
-}
-\examples{
-# Deterministic, fast example with an upward (log-linear) trend
-set.seed(123)
-n <- 16
-df <- data.frame(
-  date  = seq(as.Date("2000-01-01"), by = "quarter", length.out = n),
-  # upward trend on log-scale + small noise; strictly positive
-  value = exp(log(100) + 0.03 * (0:(n - 1)) + rnorm(n, sd = 0.02))
-)
-
-proj <- logLinearProjection(
-  df, date, value,
-  start_date = "2000-01-01",
-  end_date   = "2003-12-31"
-)
-head(proj)
-
+Fits a log-linear trend \code{log(value) ~ t} on a calibration window and
+projects it for rows on/after \code{start_date}. Designed for use inside
+dplyr verbs (no need to pass \code{.}).
 }
