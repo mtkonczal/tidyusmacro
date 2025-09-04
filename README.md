@@ -15,7 +15,7 @@ bls_data <- getBLSFiles(data_source = "cpi", email = "user@example.com")
 - **Purpose**: Downloads and merges economic data series from the Federal Reserve Economic Data (FRED).
 - **Example**:
 ```r
-fred_data <- getFRED(variables = c("GDP", "CPIAUCSL"), rename_variables = c("gdp", "cpi"), lagged = c(FALSE, TRUE))
+fred_data <- getFRED(variables = prime_epop = "LNS12300060", cpi = "CPIAUCSL"))
 ```
 
 ### 3. `getPCEInflation`
@@ -27,31 +27,18 @@ pce_data <- getPCEInflation("M")
 - The parameter `"M"` specifies monthly data frequency. Use `"Q"` for quarterly data.
 
 ### 4. `getNIPAFiles`
-- **Purpose**: Downloads and formats BEA NIPA data files.
+- **Purpose**: Downloads and formats BEA NIPA data flate files, either monthly or quarterly values.
 - **Example**:
 ```r
 nipa_data <- getNIPAFiles(type = "Q")
 ```
 
 ### 4. `logLinearProjection`
-- **Purpose**: Performs log-linear projections on historical data.
+- **Purpose**: Performs log-linear projections on historical data. Must be called within dplyr verbs.
 - **Example**:
 ```r
-projected_values <- logLinearProjection(tbl = df, date_col = "date", value_col = "gdp", start_date = "2020-01-01", end_date = "2021-01-01")
+projected_values <- logLinearProjection(date_col = date, value_col = gdp, start_date = "2020-01-01", end_date = "2021-01-01")
 ```
-
-## Installation
-
-Install from GitHub:
-
-```r
-library(devtools)
-install_github("<your-github-username>/<repository-name>")
-
-library(<your-library-name>)
-```
-
-Replace `<your-github-username>`, `<repository-name>`, and `<your-library-name>` accordingly.
 
 ## Dependencies
 
