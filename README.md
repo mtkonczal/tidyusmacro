@@ -1,7 +1,14 @@
 # Economic Data Processing R Library
 
-This library provides R functions designed to simplify downloading, processing, and analyzing economic time series data from various sources including the Bureau of Labor Statistics (BLS), the Bureau of Economic Analysis (NIPA, BEA), and the Federal Reserve Economic Data (FRED). It also includes tools for projecting time series data using log-linear models.
-
+Utilities to retrieve and tidy U.S. macroeconomic data series
+    from public government data providers. Functions streamline access to series
+    from the Federal Reserve Bank of St. Louis Federal Reserve Economic Data (FRED),
+    the Bureau of Labor Statistics (BLS) flat files, and the Bureau of Economic
+    Analysis (BEA) National Income and Product Accounts (NIPA) tables, then return
+    consistent, tidy data frames ready for modeling and graphics. The package includes
+    helpers for date alignment, log-linear projections, and common macro diagnostics,
+    along with convenience plot builders for quick publication-quality charts.
+    
 ## Functions and Examples
 
 ### 1. `getBLSFiles`

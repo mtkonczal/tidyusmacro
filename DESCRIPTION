@@ -1,16 +1,16 @@
 Package: tidyusmacro
-Title: Government Macro Data: Download and Clean U.S. Economic Indicators
+Title: Downloading and Cleaning U.S. Macroeconomic Data
 Version: 0.1.0
 Authors@R: 
     person("Mike", "Konczal", email = "konczal@gmail.com", role = c("aut", "cre"))
-Description: Utilities to retrieve and tidy U.S. macroeconomic time series
+Description: Utilities to retrieve and tidy U.S. macroeconomic data series
     from public government data providers. Functions streamline access to series
-    from the Federal Reserve Bank of St. Louis FRED website, the Bureau of Labor
-    Statistics flat files, and the Bureau of Economic Analysis full NIPA tables,
-    then return consistent, tidy data frames ready for modeling and graphics.
-    The package includes helpers for date alignment, log-linear projections,
-    and common macro diagnostics, along with convenience plot builders for
-    quick publication-quality charts.
+    from the Federal Reserve Bank of St. Louis Federal Reserve Economic Data (FRED),
+    the Bureau of Labor Statistics (BLS) flat files, and the Bureau of Economic
+    Analysis (BEA) National Income and Product Accounts (NIPA) tables, then return
+    consistent, tidy data frames ready for modeling and graphics. The package includes
+    helpers for date alignment, log-linear projections, and common macro diagnostics,
+    along with convenience plot builders for quick publication-quality charts.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
