@@ -21,27 +21,56 @@ theme_esp <- function(base_family = "Public Sans") {
       # Remove gridlines
       panel.grid.minor = ggplot2::element_blank(),
       panel.grid.major.y = ggplot2::element_line(color = "grey80"),
-      panel.grid.major.x = ggplot2::element_blank(),
+      panel.grid.major.x = ggplot2::element_line(color = "grey80"),
 
       # Axis lines and ticks
-      axis.line = ggplot2::element_line(color = "black", size = 0.5),
-      axis.ticks = ggplot2::element_line(color = "black", size = 0.5),
+      axis.line = ggplot2::element_line(color = "black", linewidth = 0.5),
+      axis.ticks = ggplot2::element_line(color = "black", linewidth = 0.5),
       axis.ticks.length = grid::unit(5, "pt"),
 
       # Titles and text
-      plot.title = ggplot2::element_text(size = 25, face = "bold", family = base_family, color = "black", margin = ggplot2::margin(b = 10, t = 10)),
-      plot.subtitle = ggplot2::element_text(size = 15, family = base_family, color = "black"),
-      plot.caption = ggplot2::element_text(size = 10, face = "italic", family = base_family, color = "black"),
-      axis.text = ggplot2::element_text(size = 12, face = "bold", family = base_family, color = "black"),
-      strip.text = ggplot2::element_text(face = "bold", size = 10, hjust = 0.5, family = base_family, color = "black"),
+      plot.title = ggplot2::element_text(
+        size = 25,
+        face = "bold",
+        family = base_family,
+        color = "black",
+        margin = ggplot2::margin(b = 10, t = 10)
+      ),
+      plot.subtitle = ggplot2::element_text(
+        size = 15,
+        family = base_family,
+        color = "black"
+      ),
+      plot.caption = ggplot2::element_text(
+        size = 10,
+        face = "italic",
+        family = base_family,
+        color = "black"
+      ),
+      axis.text = ggplot2::element_text(
+        size = 12,
+        face = "bold",
+        family = base_family,
+        color = "black"
+      ),
+      strip.text = ggplot2::element_text(
+        face = "bold",
+        size = 10,
+        hjust = 0.5,
+        family = base_family,
+        color = "black"
+      ),
 
       # Remove axis titles and legend
       axis.title.x = ggplot2::element_blank(),
       axis.title.y = ggplot2::element_blank(),
       legend.position = "none",
       legend.title = ggplot2::element_blank(),
-      legend.text = ggplot2::element_text(size = 12, family = base_family, color = "black"),
-
+      legend.text = ggplot2::element_text(
+        size = 12,
+        family = base_family,
+        color = "black"
+      ),
       # Title alignment
       plot.title.position = "plot"
     )
@@ -53,7 +82,7 @@ theme_esp <- function(base_family = "Public Sans") {
 #' @export
 esp_pal <- c(
   "Warm Navy" = "#2c3254",
-  "Warm Red"  = "#ff8361",
+  "Warm Red" = "#ff8361",
   "Soft Green" = "#70ad8f"
 )
 
