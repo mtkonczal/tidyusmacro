@@ -2,7 +2,7 @@
 % Please edit documentation in R/getPCEInflation.R
 \name{getPCEInflation}
 \alias{getPCEInflation}
-\title{Load and Process Personal Consumption Expenditures (PCE) Data}
+\title{Load and Process Personal Consumption Expenditures (PCE) Inflation Data}
 \usage{
 getPCEInflation(frequency = "M", NIPA_data = NULL)
 }
@@ -17,19 +17,20 @@ instead of loading fresh data with \code{getNIPAFiles()}.'}
 A \code{tbl_df} (data frame) containing the PCE data with calculated variables.
 }
 \description{
-This function loads flat files containing various economic data at the specified frequency
-and processes them to compute the Personal Consumption Expenditures (PCE) series.
+Downloads and processes BEA NIPA data to compute Personal Consumption Expenditures
+(PCE) price indices with weights and growth measures. This is the Federal Reserve's
+preferred inflation measure.
 }
 \details{
-It performs the following steps:
+The function performs the following steps:
 \enumerate{
-\item Loads the full dataset using \code{load_flat_files}.
-\item Extracts total GDP data (from table \code{"U20405"} and series code \code{"DPCERC"}).
-\item Computes the PCE weight for each observation as the nominal consumption share
-(i.e., consumption value divided by total GDP).
-\item Extracts a quantity measure from table \code{"U20403"}.
-\item Loads the PCE data from table \code{"U20404"}, joins the computed weights and quantity data,
-and calculates several period-over-period growth measures.
+\item Loads NIPA data using \code{\link{getNIPAFiles}} (or uses pre-loaded data).
+\item Extracts total PCE from table \code{"U20405"} (series code \code{"DPCERC"}).
+\item Computes PCE component weights as the nominal consumption share
+(component value divided by total PCE).
+\item Extracts quantity indices from table \code{"U20403"}.
+\item Loads price indices from table \code{"U20404"}, joins weights and quantities,
+and calculates period-over-period growth measures.
 }
 }
 \examples{

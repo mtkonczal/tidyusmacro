@@ -1,3 +1,55 @@
+#' Download and Process Bureau of Labor Statistics Data
+#'
+#' Downloads and processes data from Bureau of Labor Statistics (BLS) flat files.
+#' Supports multiple data sources including CPI, ECI, JOLTS, CPS, CES, and others.
+#' The function retrieves the main data file along with associated metadata files,
+#' merges them, and returns a tidy tibble ready for analysis.
+#'
+#' @param data_source Character string specifying the BLS data source. Available options:
+#'   \describe{
+#'     \item{\code{"cpi"}}{Consumer Price Index - current data}
+#'     \item{\code{"eci"}}{Employment Cost Index (quarterly)}
+#'     \item{\code{"cex"}}{Consumer Expenditure Survey}
+#'     \item{\code{"jolts"}}{Job Openings and Labor Turnover Survey}
+#'     \item{\code{"cps"}}{Current Population Survey}
+#'     \item{\code{"ces"}}{Current Employment Statistics - all series}
+#'     \item{\code{"ces_allemp"}}{Current Employment Statistics - all employees, seasonally adjusted}
+#'     \item{\code{"ces_total"}}{Current Employment Statistics - total nonfarm employment}
+#'     \item{\code{"averageprice"}}{Average price data - current}
+#'     \item{\code{"food"}}{Average price data - food items}
+#'     \item{\code{"se"}}{State and metro area employment}
+#'     \item{\code{"su"}}{State and local area unemployment}
+#'   }
+#' @param email Character string with your email address. Required by BLS for
+#'   identifying API users. Set as the HTTP User-Agent header.
+#'
+#' @return A tibble containing the merged data with columns for:
+#'   \item{series_id}{Unique identifier for each data series}
+#'   \item{date}{Observation date}
+#'   \item{value}{Numeric data value}
+#'   \item{...}{Additional metadata columns vary by data source (e.g., item codes,
+#'     industry codes, area codes)}
+#'
+#' @details
+#' The function constructs URLs to BLS flat files at
+#' \url{https://download.bls.gov/pub/time.series/}, downloads the series
+#' metadata and auxiliary lookup tables, then downloads and merges the main
+#' data file. Date parsing handles both monthly (most sources) and quarterly
+#' (ECI) data frequencies.
+#'
+#' @examples
+#' \donttest{
+#'   # Download CPI data
+#'   cpi_data <- getBLSFiles("cpi", "your.email@example.com")
+#'
+#'   # Download JOLTS data
+#'   jolts_data <- getBLSFiles("jolts", "your.email@example.com")
+#' }
+#'
+#' @importFrom readr read_tsv cols
+#' @importFrom dplyr mutate left_join as_tibble case_when
+#' @importFrom magrittr %>%
+#' @export
 getBLSFiles <- function(data_source, email) {
   # Validate the data source input
   available_sources <- c(
@@ -79,20 +131,47 @@ getBLSFiles <- function(data_source, email) {
     )
   }
 
+  # BLS metadata columns that appear in most lookup files. These are useful for
+
+  # understanding hierarchy (display_level) but have identical names across files.
+  # We rename them with the file prefix to avoid .x/.y suffix collisions.
+  # - display_level: hierarchy depth (0 = top level, higher = more detailed)
+  # - selectable: whether item can be selected in BLS Data Finder UI
+  # - sort_sequence: display order in BLS tools
+  metadata_cols_to_rename <- c("display_level", "selectable", "sort_sequence")
+
   # Download and merge the remaining auxiliary files with series_df.
   for (file in aux_files) {
     message("Downloading file: ", file)
     tmp_df <- readr::read_tsv(paste0(base_url, file), col_types = readr::cols())
 
+    # Rename metadata columns with file prefix to avoid collisions
+    # e.g., "display_level" becomes "item_display_level" for the item file
+    cols_to_rename <- intersect(names(tmp_df), metadata_cols_to_rename)
+    if (length(cols_to_rename) > 0) {
+      new_names <- paste0(file, "_", cols_to_rename)
+      names(tmp_df)[match(cols_to_rename, names(tmp_df))] <- new_names
+    }
+
+    # Determine the join key(s) for this auxiliary file.
+    # Most files use a simple "{file}_code" pattern, but some have compound keys
+    # or non-standard naming conventions.
     join_key <- if (file == "datatype") {
+      # CES datatype file uses "data_type_code" not "datatype_code"
       "data_type_code"
     } else if (data_source == "cex" && file == "characteristics") {
+      # CEX characteristics: same characteristic code can mean different things
+
+      # under different demographics (e.g., "01" = "All" for multiple groupings)
       c("demographics_code", "characteristics_code")
+    } else if (data_source == "cex" && file == "item") {
+      # CEX item: item_code is nested within subcategory_code
+      c("subcategory_code", "item_code")
     } else {
       paste0(file, "_code")
     }
 
-    # --- FIX: handle join_key being length 1 OR length > 1 ---
+    # Handle join_key being length 1 OR length > 1
     missing_in_series <- setdiff(join_key, names(series_df))
     missing_in_tmp <- setdiff(join_key, names(tmp_df))
 
@@ -162,7 +241,16 @@ getBLSFiles <- function(data_source, email) {
   }
 
   # Merge the main data with the series metadata.
+  # First, identify columns that exist in both dataframes (except series_id).
+  # Keep the main_df version of these columns (e.g., footnote_codes for the
+  # observation is more relevant than footnote_codes for the series definition).
   message("Merging main data with series metadata...")
+
+  common_cols <- setdiff(intersect(names(main_df), names(series_df)), "series_id")
+  if (length(common_cols) > 0) {
+    series_df <- series_df[, !names(series_df) %in% common_cols, drop = FALSE]
+  }
+
   result_df <- dplyr::left_join(main_df, series_df, by = "series_id")
 
   # Return the final result as a tibble.

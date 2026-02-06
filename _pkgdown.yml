@@ -1,0 +1,46 @@
+url: https://mtkonczal.github.io/tidyusmacro/
+
+template:
+  bootstrap: 5
+
+navbar:
+  structure:
+    left:  [intro, reference, articles]
+    right: [search, github]
+  components:
+    github:
+      icon: fa-github
+      href: https://github.com/mtkonczal/tidyusmacro
+      aria-label: GitHub
+
+reference:
+- title: Data Retrieval
+  desc: Functions to download data from government sources
+  contents:
+  - getFRED
+  - getBLSFiles
+  - getNIPAFiles
+  - getPCEInflation
+  - getUnrateFRED
+
+- title: Statistical Functions
+  desc: Analysis and projection tools
+  contents:
+  - logLinearProjection
+
+- title: Visualization
+  desc: ggplot2 themes and helpers
+  contents:
+  - theme_esp
+  - scale_color_esp
+  - scale_fill_esp
+  - scale_colour_esp
+  - esp_pal
+  - esp_navy
+  - date_breaks_gg
+  - date_breaks_n
+
+- title: Data
+  desc: Included datasets
+  contents:
+  - cesDiffusionIndex

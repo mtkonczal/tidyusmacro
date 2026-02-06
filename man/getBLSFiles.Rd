@@ -2,32 +2,58 @@
 % Please edit documentation in R/getBLSFiles.R
 \name{getBLSFiles}
 \alias{getBLSFiles}
-\title{Download and Process BLS Time Series Files with Vectorized Date Assignment}
+\title{Download and Process Bureau of Labor Statistics Data}
 \usage{
 getBLSFiles(data_source, email)
 }
 \arguments{
-\item{data_source}{A character string specifying the data source. One of \code{"cpi"},
-\code{"eci"}, \code{"jolts"}, \code{"cps"}, \code{"ces"}, \code{"averageprice"}, or \code{"food"}.}
+\item{data_source}{Character string specifying the BLS data source. Available options:
+\describe{
+\item{\code{"cpi"}}{Consumer Price Index - current data}
+\item{\code{"eci"}}{Employment Cost Index (quarterly)}
+\item{\code{"cex"}}{Consumer Expenditure Survey}
+\item{\code{"jolts"}}{Job Openings and Labor Turnover Survey}
+\item{\code{"cps"}}{Current Population Survey}
+\item{\code{"ces"}}{Current Employment Statistics - all series}
+\item{\code{"ces_allemp"}}{Current Employment Statistics - all employees, seasonally adjusted}
+\item{\code{"ces_total"}}{Current Employment Statistics - total nonfarm employment}
+\item{\code{"averageprice"}}{Average price data - current}
+\item{\code{"food"}}{Average price data - food items}
+\item{\code{"se"}}{State and metro area employment}
+\item{\code{"su"}}{State and local area unemployment}
+}}
 
-\item{email}{A character string containing your email address. This is used as the HTTP
-user agent when downloading files.}
+\item{email}{Character string with your email address. Required by BLS for
+identifying API users. Set as the HTTP User-Agent header.}
 }
 \value{
-A tibble containing the merged BLS data with an assigned date column.
+A tibble containing the merged data with columns for:
+\item{series_id}{Unique identifier for each data series}
+\item{date}{Observation date}
+\item{value}{Numeric data value}
+\item{...}{Additional metadata columns vary by data source (e.g., item codes,
+industry codes, area codes)}
 }
 \description{
-This function downloads and processes data from the Bureau of Labor Statistics (BLS)
-for a given data source. It downloads several auxiliary files, merges them to enrich
-series metadata, downloads the main data file, and assigns dates based on the period
-code. For monthly data (codes "M01"–"M12") the date is set to the first day of the month;
-if the period is "M13", the date is set to December 31; and for quarterly data (codes
-"Q1"–"Q4") the date is assigned as the last day of the quarter's final month.
+Downloads and processes data from Bureau of Labor Statistics (BLS) flat files.
+Supports multiple data sources including CPI, ECI, JOLTS, CPS, CES, and others.
+The function retrieves the main data file along with associated metadata files,
+merges them, and returns a tidy tibble ready for analysis.
+}
+\details{
+The function constructs URLs to BLS flat files at
+\url{https://download.bls.gov/pub/time.series/}, downloads the series
+metadata and auxiliary lookup tables, then downloads and merges the main
+data file. Date parsing handles both monthly (most sources) and quarterly
+(ECI) data frequencies.
 }
 \examples{
 \donttest{
-  # Download CPI data using your email address
-  bls_data <- getBLSFiles("cpi", "user@example.com")
+  # Download CPI data
+  cpi_data <- getBLSFiles("cpi", "your.email@example.com")
+
+  # Download JOLTS data
+  jolts_data <- getBLSFiles("jolts", "your.email@example.com")
 }
 
 }
