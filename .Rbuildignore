@@ -7,3 +7,5 @@
 ^pkgdown$
 ^\.github$
 ^CLAUDE\.md$
+^CLAUDE_dallas_pce\.md$
+^data-raw$
