@@ -52,10 +52,10 @@ The function performs the following steps:
 # \donttest{
   # Load monthly PCE data
   pce_data <- getPCEInflation("M")
-#> Start time: 2026-02-06 01:21:08.207363
+#> Start time: 2026-04-29 14:58:05.787119
 #> Loading M data from https://apps.bea.gov/national/Release/TXT//nipadataM.txt
 #> Formatting date column...
 #> Splitting TableId:LineNo using stringi and unnesting...
-#> End time: 2026-02-06 01:21:19.090909
+#> End time: 2026-04-29 14:58:16.137312
 # }
 ```

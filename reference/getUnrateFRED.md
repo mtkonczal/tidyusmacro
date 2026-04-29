@@ -37,7 +37,7 @@ A tibble with columns:
   getUnrateFRED()
 #> Downloading UNEMPLOY
 #> Downloading CLF16OV
-#> # A tibble: 936 × 4
+#> # A tibble: 939 × 4
 #>    date       unemploy_level lf_level full_unrate
 #>    <date>              <dbl>    <dbl>       <dbl>
 #>  1 1948-01-01           2034    60095      0.0338
@@ -50,6 +50,6 @@ A tibble with columns:
 #>  8 1948-08-01           2350    60806      0.0386
 #>  9 1948-09-01           2302    60815      0.0379
 #> 10 1948-10-01           2259    60646      0.0372
-#> # ℹ 926 more rows
+#> # ℹ 929 more rows
 # }
 ```

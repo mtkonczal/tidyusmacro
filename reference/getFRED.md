@@ -77,7 +77,7 @@ method.
 getFRED(unrate = "UNRATE", payroll = "PAYEMS")
 #> Downloading UNRATE
 #> Downloading PAYEMS
-#> # A tibble: 1,044 × 3
+#> # A tibble: 1,047 × 3
 #>    date       unrate payroll
 #>    <date>      <dbl>   <dbl>
 #>  1 1948-01-01    3.4   44679
@@ -90,13 +90,13 @@ getFRED(unrate = "UNRATE", payroll = "PAYEMS")
 #>  8 1948-08-01    3.9   45178
 #>  9 1948-09-01    3.8   45294
 #> 10 1948-10-01    3.7   45245
-#> # ℹ 1,034 more rows
+#> # ℹ 1,037 more rows
 
 # Multiple unnamed series (columns become 'unrate' and 'payems')
 getFRED("UNRATE", "PAYEMS")
 #> Downloading UNRATE
 #> Downloading PAYEMS
-#> # A tibble: 1,044 × 3
+#> # A tibble: 1,047 × 3
 #>    date       unrate payems
 #>    <date>      <dbl>  <dbl>
 #>  1 1948-01-01    3.4  44679
@@ -109,7 +109,7 @@ getFRED("UNRATE", "PAYEMS")
 #>  8 1948-08-01    3.9  45178
 #>  9 1948-09-01    3.8  45294
 #> 10 1948-10-01    3.7  45245
-#> # ℹ 1,034 more rows
+#> # ℹ 1,037 more rows
 
 # }
 ```
