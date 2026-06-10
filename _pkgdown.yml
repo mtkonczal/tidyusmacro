@@ -1,4 +1,4 @@
-url: https://mtkonczal.github.io/tidyusmacro/
+url: https://www.mikekonczal.com/tidyusmacro/
 
 template:
   bootstrap: 5
@@ -22,6 +22,7 @@ reference:
   - getNIPAFiles
   - getPCEInflation
   - getUnrateFRED
+  - getDallasTrimPCE
 
 - title: Statistical Functions
   desc: Analysis and projection tools
@@ -44,3 +45,4 @@ reference:
   desc: Included datasets
   contents:
   - cesDiffusionIndex
+  - dallasTrimPCEcomponents
