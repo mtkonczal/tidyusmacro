@@ -32,6 +32,11 @@
   lookup files share metadata column names; shared metadata columns are
   prefixed with the lookup file name.
 * `getBLSFiles()` now restores the user's `HTTPUserAgent` option on exit.
+* `logLinearProjection()` no longer calls the deprecated
+  `dplyr::cur_data_all()`, which warned on every use under dplyr >= 1.1.0;
+  it now uses `dplyr::pick()`. Calls using the old pre-0.2.0 string
+  interface fail with an informative error pointing to the new interface.
+* Added a testthat suite covering `logLinearProjection()`.
 
 # tidyusmacro 0.1.0
 

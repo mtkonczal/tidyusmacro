@@ -9,8 +9,9 @@
 #' @param start_date Date or string coercible to Date; start of calibration.
 #' @param end_date Date or string coercible to Date; end of calibration.
 #' @param group Optional bare column name to group by before projecting.
-#' @param data Optional data frame. If omitted, uses the current data mask
-#'   (e.g., inside \code{mutate()}) via \code{dplyr::cur_data_all()}.
+#' @param data Optional data frame. If omitted, uses the columns visible in
+#'   the current data mask (e.g., inside \code{mutate()}) via
+#'   \code{dplyr::pick()}.
 #'
 #' @return A numeric vector \code{projection} aligned to the input rows; \code{NA}
 #'   before \code{start_date}. Respects grouping if \code{group} is supplied.
@@ -23,7 +24,33 @@ logLinearProjection <- function(date, value, start_date, end_date, group = NULL,
   value_q <- rlang::enquo(value)
   group_q <- rlang::enquo(group)
 
-  if (is.null(data)) data <- dplyr::cur_data_all()
+  # Catch calls using the pre-0.2.0 interface, which passed a data frame
+  # first: logLinearProjection(tbl, "date_col", "value_col", ...)
+  first_arg <- tryCatch(rlang::eval_tidy(date_q), error = function(e) NULL)
+  if (is.data.frame(first_arg)) {
+    stop(
+      "As of tidyusmacro 0.2.0, logLinearProjection() takes bare column ",
+      "names and is designed for use inside mutate(): ",
+      "mutate(proj = logLinearProjection(date, value, start_date, end_date)). ",
+      "The old interface logLinearProjection(tbl, \"date_col\", \"value_col\", ...) ",
+      "is no longer supported. See ?logLinearProjection.",
+      call. = FALSE
+    )
+  }
+
+  if (is.null(data)) {
+    # pick() replaces the deprecated cur_data_all(), but unlike
+    # cur_data_all() it excludes grouping variables in a grouped mutate;
+    # bind them back so `group` can still reference a grouping column.
+    data <- dplyr::pick(dplyr::everything())
+    grp_vals <- dplyr::cur_group()
+    if (ncol(grp_vals) > 0) {
+      data <- dplyr::bind_cols(
+        grp_vals[rep(1, nrow(data)), , drop = FALSE],
+        data
+      )
+    }
+  }
 
   start_date <- as.Date(start_date)
   end_date   <- as.Date(end_date)

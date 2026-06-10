@@ -24,8 +24,9 @@ logLinearProjection(
 
 \item{group}{Optional bare column name to group by before projecting.}
 
-\item{data}{Optional data frame. If omitted, uses the current data mask
-(e.g., inside \code{mutate()}) via \code{dplyr::cur_data_all()}.}
+\item{data}{Optional data frame. If omitted, uses the columns visible in
+the current data mask (e.g., inside \code{mutate()}) via
+\code{dplyr::pick()}.}
 }
 \value{
 A numeric vector \code{projection} aligned to the input rows; \code{NA}
