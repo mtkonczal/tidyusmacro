@@ -1,6 +1,6 @@
 Package: tidyusmacro
 Title: Downloading and Cleaning U.S. Macroeconomic Data
-Version: 0.1.1
+Version: 0.2.0
 Authors@R: 
     person("Mike", "Konczal", email = "konczal@gmail.com", role = c("aut", "cre"))
 Description: Utilities to retrieve and tidy U.S. macroeconomic data series

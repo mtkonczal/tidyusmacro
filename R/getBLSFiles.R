@@ -107,8 +107,10 @@ getBLSFiles <- function(data_source, email) {
     "."
   )
 
-  # Set HTTP user agent using the supplied email
-  options(HTTPUserAgent = email)
+  # Set HTTP user agent using the supplied email (BLS requires a contact
+  # email in the user agent); restore the user's setting on exit per CRAN policy
+  old_opts <- options(HTTPUserAgent = email)
+  on.exit(options(old_opts), add = TRUE)
 
   # Define auxiliary files: the first two elements are reserved for URL construction
   # and the main data file, so auxiliary files start with the third element.
