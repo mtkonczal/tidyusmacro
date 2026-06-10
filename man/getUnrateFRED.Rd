@@ -19,7 +19,7 @@ FRED, and calculates the unemployment rate as
 \eqn{\text{unemploy\_level} / \text{lf\_level}}.
 }
 \examples{
-\donttest{
+\dontrun{
   getUnrateFRED()
 }
 }

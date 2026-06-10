@@ -1,4 +1,7 @@
 .Rproj.user
 .DS_Store
+.Rhistory
 docs/
 .claude/
+*.Rcheck/
+*.tar.gz

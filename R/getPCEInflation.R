@@ -25,7 +25,7 @@
 #' @importFrom dplyr select distinct lag mutate left_join group_by filter ungroup
 #' @importFrom rlang .data
 #' @examples
-#' \donttest{
+#' \dontrun{
 #'   # Load monthly PCE data
 #'   pce_data <- getPCEInflation("M")
 #' }

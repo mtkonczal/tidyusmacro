@@ -56,7 +56,7 @@ If you provide names in \code{...} \emph{and} a non-\code{NULL}
 a single naming method.
 }
 \examples{
-\donttest{
+\dontrun{
 # New interface
 getFRED(unrate = "UNRATE", payroll = "PAYEMS")
 

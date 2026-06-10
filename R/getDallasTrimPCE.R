@@ -82,7 +82,7 @@
 #' @importFrom utils data
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #'   # Default 24/31 Dallas Fed trim
 #'   panel <- getDallasTrimPCE()
 #'

@@ -11,7 +11,7 @@
 #'   \item{full_unrate}{Unemployment rate (decimal)}
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #'   getUnrateFRED()
 #' }
 #' @export

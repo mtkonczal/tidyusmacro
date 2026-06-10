@@ -1,6 +1,6 @@
 Package: tidyusmacro
 Title: Downloading and Cleaning U.S. Macroeconomic Data
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: 
     person("Mike", "Konczal", email = "konczal@gmail.com", role = c("aut", "cre"))
 Description: Utilities to retrieve and tidy U.S. macroeconomic data series
@@ -12,15 +12,18 @@ Description: Utilities to retrieve and tidy U.S. macroeconomic data series
     helpers for date alignment, log-linear projections, and common macro diagnostics,
     along with convenience plot builders for quick publication-quality charts.
 License: MIT + file LICENSE
+URL: https://github.com/mtkonczal/tidyusmacro, https://www.mikekonczal.com/tidyusmacro/
+BugReports: https://github.com/mtkonczal/tidyusmacro/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Depends: 
     R (>= 4.1.0)
 LazyData: true
-Imports: 
+Imports:
     dplyr,
     ggplot2,
+    httr,
     magrittr,
     purrr,
     readr,

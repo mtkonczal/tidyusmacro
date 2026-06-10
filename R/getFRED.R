@@ -42,7 +42,7 @@
 #' @return A tibble with a \code{date} column and one column per requested
 #'   series.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' # New interface
 #' getFRED(unrate = "UNRATE", payroll = "PAYEMS")
 #'
@@ -54,6 +54,7 @@
 #' @importFrom dplyr full_join inner_join as_tibble
 #' @importFrom purrr pmap reduce compact
 #' @importFrom utils head
+#' @importFrom httr GET status_code content user_agent
 #' @export
 getFRED <- function(...,
                     keep_all = TRUE,
@@ -120,8 +121,20 @@ getFRED <- function(...,
     )
     message("Downloading ", var)
 
+    # Fetch via httr::GET because readr::read_csv() fails against FRED's
+    # HTTP/2 endpoint ("HTTP/2 stream was not closed cleanly").
     df <- tryCatch(
-      readr::read_csv(url, col_types = readr::cols()),
+      {
+        resp <- httr::GET(
+          url,
+          httr::user_agent("tidyusmacro (https://github.com/mtkonczal/tidyusmacro)")
+        )
+        if (httr::status_code(resp) != 200) {
+          stop("HTTP ", httr::status_code(resp))
+        }
+        body <- httr::content(resp, as = "text", encoding = "UTF-8")
+        readr::read_csv(I(body), col_types = readr::cols())
+      },
       error = function(e) {
         warning("Error downloading ", var, ": ", e$message)
         return(NULL)

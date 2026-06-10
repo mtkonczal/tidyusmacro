@@ -38,7 +38,7 @@
 #' (ECI) data frequencies.
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #'   # Download CPI data
 #'   cpi_data <- getBLSFiles("cpi", "your.email@example.com")
 #'

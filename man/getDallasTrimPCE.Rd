@@ -83,7 +83,7 @@ missing this month or last) have \code{weight}, \code{is_trimmed}, and
 \code{trim_side} set to \code{NA}.
 }
 \examples{
-\donttest{
+\dontrun{
   # Default 24/31 Dallas Fed trim
   panel <- getDallasTrimPCE()
 
