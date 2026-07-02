@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Downloading and Cleaning U.S. Macroeconomic Data • tidyusmacro</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Downloading and Cleaning U.S. Macroeconomic Data">
 <meta name="description" content="Utilities to retrieve and tidy U.S. macroeconomic data series from public government data providers. Functions streamline access to series from the Federal Reserve Bank of St. Louis Federal Reserve Economic Data (FRED), the Bureau of Labor Statistics flat files, and the Bureau of Economic Analysis National Income and Product Accounts tables, then return consistent, tidy data frames ready for modeling and graphics. The package includes helpers for date alignment, log-linear projections, and common macro diagnostics, along with convenience plot builders for quick publication-quality charts.">
@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">tidyusmacro</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -54,7 +54,10 @@
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Install from GitHub</span></span>
+<code class="sourceCode R"><span><span class="co"># Install from CRAN</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"tidyusmacro"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Or the development version from GitHub</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"mtkonczal/tidyusmacro"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -79,7 +82,7 @@
 <h4 id="getblsfiles">
 <code>getBLSFiles</code><a class="anchor" aria-label="anchor" href="#getblsfiles"></a>
 </h4>
-<p>Downloads and processes data from Bureau of Labor Statistics flat files. Supports CPI, ECI, JOLTS, CPS, CES, and more.</p>
+<p>Downloads and processes data from Bureau of Labor Statistics flat files. Supports CPI, ECI, JOLTS, CPS, CES, and CEX (Consumer Expenditure Survey).</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cpi_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getBLSFiles.html">getBLSFiles</a></span><span class="op">(</span>data_source <span class="op">=</span> <span class="st">"cpi"</span>, email <span class="op">=</span> <span class="st">"user@example.com"</span><span class="op">)</span></span>
 <span><span class="va">jolts_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getBLSFiles.html">getBLSFiles</a></span><span class="op">(</span>data_source <span class="op">=</span> <span class="st">"jolts"</span>, email <span class="op">=</span> <span class="st">"user@example.com"</span><span class="op">)</span></span></code></pre></div>
@@ -110,6 +113,21 @@
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">unrate_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getUnrateFRED.html">getUnrateFRED</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
+<div class="section level4">
+<h4 id="getdallastrimpce">
+<code>getDallasTrimPCE</code><a class="anchor" aria-label="anchor" href="#getdallastrimpce"></a>
+</h4>
+<p>Builds the component-level panel underlying the Dallas Fed Trimmed Mean PCE inflation rate: monthly price changes, Fisher expenditure-share weights, and flags for which components are trimmed each month. Useful for replicating the trimmed-mean rate or analyzing what gets trimmed.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Default 24/31 Dallas Fed trim</span></span>
+<span><span class="va">panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getDallasTrimPCE.html">getDallasTrimPCE</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Replicate the monthly trimmed-mean rate</span></span>
+<span><span class="va">panel</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="op">!</span><span class="va">is_trimmed</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">date</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarize</a></span><span class="op">(</span>trim_pce <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/weighted.mean.html" class="external-link">weighted.mean</a></span><span class="op">(</span><span class="va">price_change</span>, <span class="va">weight</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level3">
 <h3 id="statistical-functions">Statistical Functions<a class="anchor" aria-label="anchor" href="#statistical-functions"></a>
@@ -119,7 +137,7 @@
 <code>logLinearProjection</code><a class="anchor" aria-label="anchor" href="#loglinearprojection"></a>
 </h4>
 <p>Performs log-linear projections on historical data. Designed for use within dplyr verbs.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">data</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
@@ -139,7 +157,7 @@
 <code>theme_esp</code><a class="anchor" aria-label="anchor" href="#theme_esp"></a>
 </h4>
 <p>Custom ggplot2 theme for Economic Security Project graphics with cream background and clean styling.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">data</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">date</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -152,7 +170,7 @@
 <a class="anchor" aria-label="anchor" href="#scale_color_esp--scale_fill_esp"></a>
 </h4>
 <p>ESP-branded color scales for ggplot2.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">data</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">date</span>, <span class="va">value</span>, color <span class="op">=</span> <span class="va">category</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="reference/esp_theme.html">scale_color_esp</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
@@ -163,7 +181,7 @@
 <code>date_breaks_gg</code><a class="anchor" aria-label="anchor" href="#date_breaks_gg"></a>
 </h4>
 <p>Creates intelligent date breaks for ggplot2 that always include the last data point.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">data</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">date</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_date.html" class="external-link">scale_x_date</a></span><span class="op">(</span>breaks <span class="op">=</span> <span class="fu"><a href="reference/date_breaks_gg.html">date_breaks_gg</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">6</span>, last <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">date</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -173,7 +191,7 @@
 <code>date_breaks_n</code><a class="anchor" aria-label="anchor" href="#date_breaks_n"></a>
 </h4>
 <p>Generates evenly spaced date breaks by selecting every nth unique date.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">data</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">date</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_date.html" class="external-link">scale_x_date</a></span><span class="op">(</span>breaks <span class="op">=</span> <span class="fu"><a href="reference/date_breaks_n.html">date_breaks_n</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">date</span>, n <span class="op">=</span> <span class="fl">6</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -188,8 +206,16 @@
 <code>cesDiffusionIndex</code><a class="anchor" aria-label="anchor" href="#cesdiffusionindex"></a>
 </h4>
 <p>A tibble with 250 rows mapping CES industry codes to industry titles.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">cesDiffusionIndex</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="dallastrimpcecomponents">
+<code>dallasTrimPCEcomponents</code><a class="anchor" aria-label="anchor" href="#dallastrimpcecomponents"></a>
+</h4>
+<p>The 177-component dictionary used by <code>getDallasTrimPCE</code>, mapping Dallas Fed trimmed-mean PCE components to BEA NIPA series codes and line numbers (Table 2.4.4U).</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">dallasTrimPCEcomponents</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -198,6 +224,7 @@
 <ul>
 <li>dplyr</li>
 <li>ggplot2</li>
+<li>httr</li>
 <li>tidyr</li>
 <li>readr</li>
 <li>purrr</li>
@@ -216,6 +243,8 @@
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
 <li><a href="https://cloud.r-project.org/package=tidyusmacro" class="external-link">View on CRAN</a></li>
+<li><a href="https://github.com/mtkonczal/tidyusmacro/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/mtkonczal/tidyusmacro/issues" class="external-link">Report a bug</a></li>
 </ul>
 </div>
 

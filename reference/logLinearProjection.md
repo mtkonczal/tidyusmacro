@@ -41,10 +41,10 @@ logLinearProjection(
 
 - data:
 
-  Optional data frame. If omitted, uses the current data mask (e.g.,
-  inside
+  Optional data frame. If omitted, uses the columns visible in the
+  current data mask (e.g., inside
   [`mutate()`](https://dplyr.tidyverse.org/reference/mutate.html)) via
-  [`dplyr::cur_data_all()`](https://dplyr.tidyverse.org/reference/deprec-context.html).
+  [`dplyr::pick()`](https://dplyr.tidyverse.org/reference/pick.html).
 
 ## Value
 

@@ -58,12 +58,12 @@ Analysis National Income and Product Accounts)
 **FRED API key support** - Current implementation uses CSV endpoint:
 
 - Add `api_key` parameter to
-  [`getFRED()`](https://mtkonczal.github.io/tidyusmacro/reference/getFRED.md)
+  [`getFRED()`](https://www.mikekonczal.com/tidyusmacro/reference/getFRED.md)
 - Higher rate limits with registered key
 - Access to more series metadata
 
 **Add more BLS data sources** - Extend
-[`getBLSFiles()`](https://mtkonczal.github.io/tidyusmacro/reference/getBLSFiles.md):
+[`getBLSFiles()`](https://www.mikekonczal.com/tidyusmacro/reference/getBLSFiles.md):
 
 - PPI (Producer Price Index) - prefix `wp`
 - Productivity - prefix `pr`
@@ -78,7 +78,7 @@ Analysis National Income and Product Accounts)
 
 - Consider `cli` package for progress indication
 - Show download progress for each file in
-  [`getBLSFiles()`](https://mtkonczal.github.io/tidyusmacro/reference/getBLSFiles.md)
+  [`getBLSFiles()`](https://www.mikekonczal.com/tidyusmacro/reference/getBLSFiles.md)
 
 **Consolidate date break functions** - `date_breaks_gg` and
 `date_breaks_n` overlap:
@@ -95,6 +95,7 @@ Analysis National Income and Product Accounts)
 ## Testing Commands
 
 ``` r
+
 # Load package for development
 devtools::load_all()
 
@@ -112,14 +113,14 @@ pkgdown::build_site()
 
 ### BLS File Mappings
 
-| Source | Prefix | Data File           | Key Auxiliary Files                                   |
-|--------|--------|---------------------|-------------------------------------------------------|
-| cpi    | cu     | data.0.Current      | series, item, area                                    |
-| eci    | ci     | data.1.AllData      | series, industry, owner, occupation                   |
-| jolts  | jt     | data.1.AllItems     | series, industry, state, dataelement, sizeclass       |
-| cps    | ln     | data.1.AllData      | series, ages, occupation, race, education             |
-| ces    | ce     | data.0.AllCESSeries | series, datatype, supersector, industry               |
-| cex    | cx     | data.1.AllData      | series, category, characteristics, demographics, item |
+| Source | Prefix | Data File | Key Auxiliary Files |
+|----|----|----|----|
+| cpi | cu | data.0.Current | series, item, area |
+| eci | ci | data.1.AllData | series, industry, owner, occupation |
+| jolts | jt | data.1.AllItems | series, industry, state, dataelement, sizeclass |
+| cps | ln | data.1.AllData | series, ages, occupation, race, education |
+| ces | ce | data.0.AllCESSeries | series, datatype, supersector, industry |
+| cex | cx | data.1.AllData | series, category, characteristics, demographics, item |
 
 ### BLS Flat File URL Pattern
 

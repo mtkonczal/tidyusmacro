@@ -103,31 +103,11 @@ quarterly (ECI) data frequencies.
 ## Examples
 
 ``` r
-# \donttest{
+if (FALSE) { # \dontrun{
   # Download CPI data
   cpi_data <- getBLSFiles("cpi", "your.email@example.com")
-#> Downloading series file...
-#> Downloading file: item
-#> Downloading file: area
-#> Downloading main data file: data.0.Current
-#> Warning: There was 1 warning in `dplyr::mutate()`.
-#> ℹ In argument: `value = as.numeric(value)`.
-#> Caused by warning:
-#> ! NAs introduced by coercion
-#> Merging main data with series metadata...
 
   # Download JOLTS data
   jolts_data <- getBLSFiles("jolts", "your.email@example.com")
-#> Downloading series file...
-#> Downloading file: industry
-#> Downloading file: state
-#> Downloading file: dataelement
-#> Downloading file: sizeclass
-#> Downloading main data file: data.1.AllItems
-#> Warning: One or more parsing issues, call `problems()` on your data frame for details,
-#> e.g.:
-#>   dat <- vroom(...)
-#>   problems(dat)
-#> Merging main data with series metadata...
-# }
+} # }
 ```

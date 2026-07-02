@@ -15,7 +15,11 @@ quick publication-quality charts.
 ## Installation
 
 ``` r
-# Install from GitHub
+
+# Install from CRAN
+install.packages("tidyusmacro")
+
+# Or the development version from GitHub
 devtools::install_github("mtkonczal/tidyusmacro")
 ```
 
@@ -29,6 +33,7 @@ Downloads and merges economic data series from the Federal Reserve
 Economic Data (FRED) API.
 
 ``` r
+
 # Named arguments give friendly column names
 fred_data <- getFRED(prime_epop = "LNS12300060", cpi = "CPIAUCSL")
 
@@ -39,9 +44,11 @@ fred_data <- getFRED("UNRATE", "PAYEMS")
 #### `getBLSFiles`
 
 Downloads and processes data from Bureau of Labor Statistics flat files.
-Supports CPI, ECI, JOLTS, CPS, CES, and more.
+Supports CPI, ECI, JOLTS, CPS, CES, and CEX (Consumer Expenditure
+Survey).
 
 ``` r
+
 cpi_data <- getBLSFiles(data_source = "cpi", email = "user@example.com")
 jolts_data <- getBLSFiles(data_source = "jolts", email = "user@example.com")
 ```
@@ -52,6 +59,7 @@ Downloads and formats BEA NIPA data flat files, either monthly or
 quarterly values.
 
 ``` r
+
 nipa_quarterly <- getNIPAFiles(type = "Q")
 nipa_monthly <- getNIPAFiles(type = "M")
 ```
@@ -62,6 +70,7 @@ Loads and processes Personal Consumption Expenditures (PCE) inflation
 data with weights and growth measures.
 
 ``` r
+
 pce_monthly <- getPCEInflation("M")
 pce_quarterly <- getPCEInflation("Q")
 ```
@@ -72,7 +81,27 @@ Convenience function to download unemployment level and labor force from
 FRED and calculate the unemployment rate.
 
 ``` r
+
 unrate_data <- getUnrateFRED()
+```
+
+#### `getDallasTrimPCE`
+
+Builds the component-level panel underlying the Dallas Fed Trimmed Mean
+PCE inflation rate: monthly price changes, Fisher expenditure-share
+weights, and flags for which components are trimmed each month. Useful
+for replicating the trimmed-mean rate or analyzing what gets trimmed.
+
+``` r
+
+# Default 24/31 Dallas Fed trim
+panel <- getDallasTrimPCE()
+
+# Replicate the monthly trimmed-mean rate
+panel |>
+  dplyr::filter(!is_trimmed) |>
+  dplyr::group_by(date) |>
+  dplyr::summarize(trim_pce = weighted.mean(price_change, weight))
 ```
 
 ### Statistical Functions
@@ -83,6 +112,7 @@ Performs log-linear projections on historical data. Designed for use
 within dplyr verbs.
 
 ``` r
+
 library(dplyr)
 
 data %>%
@@ -102,6 +132,7 @@ Custom ggplot2 theme for Economic Security Project graphics with cream
 background and clean styling.
 
 ``` r
+
 library(ggplot2)
 
 ggplot(data, aes(date, value)) +
@@ -114,6 +145,7 @@ ggplot(data, aes(date, value)) +
 ESP-branded color scales for ggplot2.
 
 ``` r
+
 ggplot(data, aes(date, value, color = category)) +
   geom_line() +
   scale_color_esp() +
@@ -126,6 +158,7 @@ Creates intelligent date breaks for ggplot2 that always include the last
 data point.
 
 ``` r
+
 ggplot(data, aes(date, value)) +
   geom_line() +
   scale_x_date(breaks = date_breaks_gg(n = 6, last = max(data$date)))
@@ -136,6 +169,7 @@ ggplot(data, aes(date, value)) +
 Generates evenly spaced date breaks by selecting every nth unique date.
 
 ``` r
+
 ggplot(data, aes(date, value)) +
   geom_line() +
   scale_x_date(breaks = date_breaks_n(data$date, n = 6))
@@ -148,13 +182,26 @@ ggplot(data, aes(date, value)) +
 A tibble with 250 rows mapping CES industry codes to industry titles.
 
 ``` r
+
 data(cesDiffusionIndex)
+```
+
+#### `dallasTrimPCEcomponents`
+
+The 177-component dictionary used by `getDallasTrimPCE`, mapping Dallas
+Fed trimmed-mean PCE components to BEA NIPA series codes and line
+numbers (Table 2.4.4U).
+
+``` r
+
+data(dallasTrimPCEcomponents)
 ```
 
 ## Dependencies
 
 - dplyr
 - ggplot2
+- httr
 - tidyr
 - readr
 - purrr

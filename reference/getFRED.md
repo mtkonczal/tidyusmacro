@@ -72,44 +72,12 @@ method.
 ## Examples
 
 ``` r
-# \donttest{
+if (FALSE) { # \dontrun{
 # New interface
 getFRED(unrate = "UNRATE", payroll = "PAYEMS")
-#> Downloading UNRATE
-#> Downloading PAYEMS
-#> # A tibble: 1,047 × 3
-#>    date       unrate payroll
-#>    <date>      <dbl>   <dbl>
-#>  1 1948-01-01    3.4   44679
-#>  2 1948-02-01    3.8   44533
-#>  3 1948-03-01    4     44683
-#>  4 1948-04-01    3.9   44379
-#>  5 1948-05-01    3.5   44796
-#>  6 1948-06-01    3.6   45034
-#>  7 1948-07-01    3.6   45160
-#>  8 1948-08-01    3.9   45178
-#>  9 1948-09-01    3.8   45294
-#> 10 1948-10-01    3.7   45245
-#> # ℹ 1,037 more rows
 
 # Multiple unnamed series (columns become 'unrate' and 'payems')
 getFRED("UNRATE", "PAYEMS")
-#> Downloading UNRATE
-#> Downloading PAYEMS
-#> # A tibble: 1,047 × 3
-#>    date       unrate payems
-#>    <date>      <dbl>  <dbl>
-#>  1 1948-01-01    3.4  44679
-#>  2 1948-02-01    3.8  44533
-#>  3 1948-03-01    4    44683
-#>  4 1948-04-01    3.9  44379
-#>  5 1948-05-01    3.5  44796
-#>  6 1948-06-01    3.6  45034
-#>  7 1948-07-01    3.6  45160
-#>  8 1948-08-01    3.9  45178
-#>  9 1948-09-01    3.8  45294
-#> 10 1948-10-01    3.7  45245
-#> # ℹ 1,037 more rows
 
-# }
+} # }
 ```

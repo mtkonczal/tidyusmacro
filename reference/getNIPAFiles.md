@@ -35,12 +35,7 @@ A data frame containing the merged and formatted NIPA data.
 ## Examples
 
 ``` r
-# \donttest{
+if (FALSE) { # \dontrun{
   nipadata <- getNIPAFiles(type = "Q")
-#> Start time: 2026-04-29 14:57:54.685992
-#> Loading Q data from https://apps.bea.gov/national/Release/TXT//nipadataQ.txt
-#> Formatting date column...
-#> Splitting TableId:LineNo using stringi and unnesting...
-#> End time: 2026-04-29 14:58:05.674499
-# }
+} # }
 ```
