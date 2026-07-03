@@ -33,21 +33,23 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="tidyusmacro-development-version">tidyusmacro (development version)<a class="anchor" aria-label="anchor" href="#tidyusmacro-development-version"></a></h2>
-<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD ## Bug fixes and improvements</p>
+<div class="section level3">
+<h3 id="bug-fixes-and-improvements-development-version">Bug fixes and improvements<a class="anchor" aria-label="anchor" href="#bug-fixes-and-improvements-development-version"></a></h3>
 <ul><li>
+<code><a href="../reference/getFRED.html">getFRED()</a></code> downloads are now more robust: transient failures are retried up to 3 times with backoff, and transport-level errors (FRED’s intermittent “HTTP/2 stream was not closed cleanly” resets) trigger a fallback request over HTTP/1.1. Bad series IDs (HTTP 400/404) still fail fast.</li>
+<li>
+<code><a href="../reference/getFRED.html">getFRED()</a></code> now parses FRED’s <code>"."</code> missing-value marker as <code>NA</code>, so value columns stay numeric instead of silently becoming character.</li>
+<li>The network layer of <code><a href="../reference/getFRED.html">getFRED()</a></code> was factored into an internal helper so it can be mocked; added a full offline unit-test suite plus live integration tests (skipped on CRAN and when offline) for <code><a href="../reference/getFRED.html">getFRED()</a></code> and <code><a href="../reference/getUnrateFRED.html">getUnrateFRED()</a></code>.</li>
+<li>
 <code><a href="../reference/getPCEInflation.html">getPCEInflation()</a></code> now annualizes <code>WDataValue_P1a</code> using the compounding implied by <code>frequency</code> (12 periods for monthly, 4 for quarterly). It previously always used <code>^4</code>, which understated annualized contributions for monthly data (the default) by roughly a factor of three. Monthly values of <code>WDataValue_P1a</code> will change; other columns are unaffected.</li>
 <li>
 <code><a href="../reference/getBLSFiles.html">getBLSFiles()</a></code> join handling is hardened: colliding non-key columns in lookup files are now detected dynamically and prefixed with the file name (in addition to the always-prefixed metadata columns), all joins validate <code>relationship = "many-to-one"</code> so a non-unique lookup key errors loudly instead of silently duplicating rows, and a final invariant check guarantees no <code>.x</code>/<code>.y</code> columns. Output for all currently supported data sources is unchanged.</li>
 <li>tidyusmacro now requires dplyr &gt;= 1.1.0 (for join <code>relationship</code> validation).</li>
 <li>
 <code>getBLSFiles("su")</code> works again: the LAU state/region/division lookup is now requested as <code>la.state_region_division</code> (a misspelling, <code>state_region_divison</code>, made every <code>su</code> call fail with a 404) and joined on its actual key, <code>srd_code</code>, so <code>srd_text</code> is attached to the output.</li>
-<li>Documentation improvements throughout: a package-level help page (<code><a href="../reference/tidyusmacro-package.html">?tidyusmacro</a></code>), examples and fuller descriptions for <code><a href="../reference/esp_theme.html">theme_esp()</a></code>, <code>esp_pal</code>, and <code>esp_navy</code>, documented return columns for <code><a href="../reference/getNIPAFiles.html">getNIPAFiles()</a></code> and <code><a href="../reference/getPCEInflation.html">getPCEInflation()</a></code>, and cross-references between <code><a href="../reference/date_breaks_gg.html">date_breaks_gg()</a></code> and <code><a href="../reference/date_breaks_n.html">date_breaks_n()</a></code>. =======</li>
-<li>
-<code><a href="../reference/getFRED.html">getFRED()</a></code> downloads are now more robust: transient failures are retried up to 3 times with backoff, and transport-level errors (FRED’s intermittent “HTTP/2 stream was not closed cleanly” resets) trigger a fallback request over HTTP/1.1. Bad series IDs (HTTP 400/404) still fail fast.</li>
-<li>
-<code><a href="../reference/getFRED.html">getFRED()</a></code> now parses FRED’s <code>"."</code> missing-value marker as <code>NA</code>, so value columns stay numeric instead of silently becoming character.</li>
-<li>The network layer of <code><a href="../reference/getFRED.html">getFRED()</a></code> was factored into an internal helper so it can be mocked; added a full offline unit-test suite plus live integration tests (skipped on CRAN and when offline) for <code><a href="../reference/getFRED.html">getFRED()</a></code> and <code><a href="../reference/getUnrateFRED.html">getUnrateFRED()</a></code>. &gt;&gt;&gt;&gt;&gt;&gt;&gt; worktree-fix-getfred</li>
+<li>Documentation improvements throughout: a package-level help page (<code><a href="../reference/tidyusmacro-package.html">?tidyusmacro</a></code>), examples and fuller descriptions for <code><a href="../reference/esp_theme.html">theme_esp()</a></code>, <code>esp_pal</code>, and <code>esp_navy</code>, documented return columns for <code><a href="../reference/getNIPAFiles.html">getNIPAFiles()</a></code> and <code><a href="../reference/getPCEInflation.html">getPCEInflation()</a></code>, and cross-references between <code><a href="../reference/date_breaks_gg.html">date_breaks_gg()</a></code> and <code><a href="../reference/date_breaks_n.html">date_breaks_n()</a></code>.</li>
 </ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="tidyusmacro-020">tidyusmacro 0.2.0<a class="anchor" aria-label="anchor" href="#tidyusmacro-020"></a></h2><p class="text-muted">CRAN release: 2026-06-12</p>
 <div class="section level3">
