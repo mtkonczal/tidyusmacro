@@ -3,9 +3,25 @@
 \name{esp_pal}
 \alias{esp_pal}
 \title{ESP Color Palette}
+\format{
+A named character vector of three hex colors:
+\describe{
+\item{"Warm Navy"}{\code{"#2c3254"}}
+\item{"Warm Red"}{\code{"#ff8361"}}
+\item{"Soft Green"}{\code{"#70ad8f"}}
+}
+}
 \usage{
 esp_pal
 }
 \description{
-Named vector of ESP-branded colors.
+Named character vector of ESP-branded colors, used by
+\code{\link{scale_color_esp}} and \code{\link{scale_fill_esp}}.
+}
+\examples{
+esp_pal
+esp_pal[["Warm Red"]]
+}
+\seealso{
+\code{\link{esp_navy}}, \code{\link{theme_esp}}
 }

@@ -10,6 +10,9 @@
 #' @param decreasing Logical; if TRUE, return breaks in descending order. Default FALSE.
 #'
 #' @return A function usable in \code{scale_x_date(breaks = ...)}.
+#'
+#' @seealso \code{\link{date_breaks_n}}, which takes the date vector directly
+#'   and returns a vector of breaks instead of a breaks function.
 #' @export
 #'
 #' @examples

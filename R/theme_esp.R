@@ -1,11 +1,54 @@
 #' ESP Theme and Color Scales
 #'
-#' Custom theme and color palette for Economic Security Project graphics.
+#' Custom ggplot2 theme and discrete color/fill scales for Economic Security
+#' Project graphics.
 #'
-#' @param base_family Base font family for the theme. Defaults to "Public Sans".
-#' @param ... Passed to the underlying ggplot2 scale functions.
+#' \code{theme_esp()} builds on \code{\link[ggplot2]{theme_minimal}} with an
+#' ESP house style. Note several opinionated defaults: a cream plot background
+#' (\code{"#f4f2e4"}), no minor gridlines, and \strong{axis titles and the
+#' legend removed entirely}. Label lines directly (e.g., with
+#' \code{annotate()} or \code{geom_text()}) or re-enable the legend with
+#' \code{theme(legend.position = ...)} after \code{theme_esp()}.
 #'
-#' @return A ggplot2 theme or scale object.
+#' \code{scale_color_esp()} and \code{scale_fill_esp()} apply the
+#' \code{\link{esp_pal}} palette (three colors, so at most three discrete
+#' levels). \code{scale_colour_esp()} is an alias.
+#'
+#' @param base_family Base font family for the theme. Defaults to
+#'   "Public Sans"; if the font is not installed, ggplot2 falls back to the
+#'   default sans font.
+#' @param ... Passed to the underlying ggplot2 scale functions
+#'   (\code{\link[ggplot2]{scale_color_manual}} /
+#'   \code{\link[ggplot2]{scale_fill_manual}}).
+#'
+#' @return \code{theme_esp()} returns a \code{\link[ggplot2]{theme}} object;
+#'   the scale functions return ggplot2 scale objects. All are added to a
+#'   plot with \code{+}.
+#'
+#' @seealso \code{\link{esp_pal}}, \code{\link{esp_navy}}
+#'
+#' @examples
+#' # Plots are assigned rather than printed: rendering requires the
+#' # "Public Sans" font, which check machines may not have registered.
+#' library(ggplot2)
+#'
+#' p1 <- ggplot(economics, aes(date, unemploy / pop)) +
+#'   geom_line(color = esp_navy) +
+#'   labs(
+#'     title = "Unemployment share of population",
+#'     caption = "Source: FRED via ggplot2::economics."
+#'   ) +
+#'   theme_esp()
+#'
+#' # Multiple series (palette has 3 colors, so at most 3 levels);
+#' # theme_esp() removes the legend, so label lines directly
+#' dat <- subset(economics_long, variable %in% c("psavert", "uempmed", "unemploy"))
+#' p2 <- ggplot(dat, aes(date, value01, color = variable)) +
+#'   geom_line() +
+#'   scale_color_esp() +
+#'   theme_esp()
+#'
+#' # print(p1) or print(p2) to render (needs the font installed)
 #'
 #' @name esp_theme
 #' @importFrom ggplot2 theme_minimal theme element_rect element_blank element_line element_text scale_color_manual scale_fill_manual
@@ -78,7 +121,21 @@ theme_esp <- function(base_family = "Public Sans") {
 
 #' ESP Color Palette
 #'
-#' Named vector of ESP-branded colors.
+#' Named character vector of ESP-branded colors, used by
+#' \code{\link{scale_color_esp}} and \code{\link{scale_fill_esp}}.
+#'
+#' @format A named character vector of three hex colors:
+#' \describe{
+#'   \item{"Warm Navy"}{\code{"#2c3254"}}
+#'   \item{"Warm Red"}{\code{"#ff8361"}}
+#'   \item{"Soft Green"}{\code{"#70ad8f"}}
+#' }
+#'
+#' @seealso \code{\link{esp_navy}}, \code{\link{theme_esp}}
+#'
+#' @examples
+#' esp_pal
+#' esp_pal[["Warm Red"]]
 #' @export
 esp_pal <- c(
   "Warm Navy" = "#2c3254",
@@ -88,7 +145,16 @@ esp_pal <- c(
 
 #' ESP Primary Color (Navy)
 #'
-#' A standalone color value for quick use.
+#' The ESP primary color ("Warm Navy", \code{"#2c3254"}) as a standalone
+#' value, convenient for single-series plots:
+#' \code{geom_line(color = esp_navy)}.
+#'
+#' @format A named character vector of length 1.
+#'
+#' @seealso \code{\link{esp_pal}}, \code{\link{theme_esp}}
+#'
+#' @examples
+#' esp_navy
 #' @export
 esp_navy <- esp_pal["Warm Navy"]
 

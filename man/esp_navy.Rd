@@ -3,9 +3,20 @@
 \name{esp_navy}
 \alias{esp_navy}
 \title{ESP Primary Color (Navy)}
+\format{
+A named character vector of length 1.
+}
 \usage{
 esp_navy
 }
 \description{
-A standalone color value for quick use.
+The ESP primary color ("Warm Navy", \code{"#2c3254"}) as a standalone
+value, convenient for single-series plots:
+\code{geom_line(color = esp_navy)}.
+}
+\examples{
+esp_navy
+}
+\seealso{
+\code{\link{esp_pal}}, \code{\link{theme_esp}}
 }

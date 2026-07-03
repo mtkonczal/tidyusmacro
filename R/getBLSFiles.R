@@ -86,7 +86,7 @@ getBLSFiles <- function(data_source, email) {
     averageprice = c("ap", "data.0.Current", "series", "area", "item"),
     food         = c("ap", "data.3.Food", "series", "area", "item"),
     se           = c("sm", "data.0.Current", "series", "industry", "data_type", "supersector", "state", "area"),
-    su           = c("la", "data.1.CurrentS", "series", "state_region_divison", "measure", "area", "area_type")
+    su           = c("la", "data.1.CurrentS", "series", "state_region_division", "measure", "area", "area_type")
   )
 
   # 2. Extract the files based on the data_source variable
@@ -147,20 +147,15 @@ getBLSFiles <- function(data_source, email) {
     message("Downloading file: ", file)
     tmp_df <- readr::read_tsv(paste0(base_url, file), col_types = readr::cols())
 
-    # Rename metadata columns with file prefix to avoid collisions
-    # e.g., "display_level" becomes "item_display_level" for the item file
-    cols_to_rename <- intersect(names(tmp_df), metadata_cols_to_rename)
-    if (length(cols_to_rename) > 0) {
-      new_names <- paste0(file, "_", cols_to_rename)
-      names(tmp_df)[match(cols_to_rename, names(tmp_df))] <- new_names
-    }
-
     # Determine the join key(s) for this auxiliary file.
     # Most files use a simple "{file}_code" pattern, but some have compound keys
     # or non-standard naming conventions.
     join_key <- if (file == "datatype") {
       # CES datatype file uses "data_type_code" not "datatype_code"
       "data_type_code"
+    } else if (file == "state_region_division") {
+      # LAU state/region/division lookup keys on "srd_code"
+      "srd_code"
     } else if (data_source == "cex" && file == "characteristics") {
       # CEX characteristics: same characteristic code can mean different things
 
@@ -171,6 +166,25 @@ getBLSFiles <- function(data_source, email) {
       c("subcategory_code", "item_code")
     } else {
       paste0(file, "_code")
+    }
+
+    # Rename colliding columns with the file prefix, e.g. "display_level"
+    # becomes "item_display_level" for the item file. Two sources:
+    #  1. Known BLS metadata columns (always prefixed, so names are stable
+    #     across data sources regardless of which files collide), and
+    #  2. Any other non-key column already present in series_df, detected
+    #     dynamically so unanticipated overlaps never yield .x/.y suffixes.
+    collision_cols <- setdiff(
+      intersect(names(tmp_df), names(series_df)),
+      join_key
+    )
+    cols_to_rename <- union(
+      intersect(names(tmp_df), metadata_cols_to_rename),
+      collision_cols
+    )
+    if (length(cols_to_rename) > 0) {
+      new_names <- paste0(file, "_", cols_to_rename)
+      names(tmp_df)[match(cols_to_rename, names(tmp_df))] <- new_names
     }
 
     # Handle join_key being length 1 OR length > 1
@@ -204,7 +218,13 @@ getBLSFiles <- function(data_source, email) {
         file
       )
     } else {
-      series_df <- dplyr::left_join(series_df, tmp_df, by = join_key)
+      # Lookup tables must be unique on their key; "many-to-one" makes
+      # dplyr error loudly instead of silently duplicating series rows.
+      series_df <- dplyr::left_join(
+        series_df, tmp_df,
+        by = join_key,
+        relationship = "many-to-one"
+      )
     }
   }
 
@@ -253,7 +273,22 @@ getBLSFiles <- function(data_source, email) {
     series_df <- series_df[, !names(series_df) %in% common_cols, drop = FALSE]
   }
 
-  result_df <- dplyr::left_join(main_df, series_df, by = "series_id")
+  # series_df must be unique on series_id; error loudly if not.
+  result_df <- dplyr::left_join(
+    main_df, series_df,
+    by = "series_id",
+    relationship = "many-to-one"
+  )
+
+  # Invariant: no join above should ever produce dplyr's .x/.y suffixes.
+  suffixed <- grep("\\.[xy]$", names(result_df), value = TRUE)
+  if (length(suffixed) > 0) {
+    stop(
+      "Internal error: duplicated columns after merge (",
+      paste(suffixed, collapse = ", "),
+      "). Please report at https://github.com/mtkonczal/tidyusmacro/issues"
+    )
+  }
 
   # Return the final result as a tibble.
   dplyr::as_tibble(result_df)

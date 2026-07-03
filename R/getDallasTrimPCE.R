@@ -76,8 +76,7 @@
 #' caution as Trimmed Mean PCE inflation eases." Federal Reserve Bank of
 #' Dallas, April 16, 2026.
 #'
-#' @importFrom dplyr arrange case_when coalesce filter group_by if_else
-#'   inner_join lag mutate n pull select summarize transmute ungroup
+#' @importFrom dplyr arrange case_when coalesce filter group_by if_else inner_join lag mutate n pull select summarize transmute ungroup
 #' @importFrom rlang .data
 #' @importFrom utils data
 #'

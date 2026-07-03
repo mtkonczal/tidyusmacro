@@ -40,3 +40,7 @@ ggplot(dat, aes(date, value)) +
   ) +
   labs(x = NULL, y = NULL)
 }
+\seealso{
+\code{\link{date_breaks_n}}, which takes the date vector directly
+and returns a vector of breaks instead of a breaks function.
+}
