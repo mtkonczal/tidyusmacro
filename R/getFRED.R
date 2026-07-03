@@ -54,7 +54,7 @@
 #' @importFrom dplyr full_join inner_join as_tibble
 #' @importFrom purrr pmap reduce compact
 #' @importFrom utils head
-#' @importFrom httr GET status_code content user_agent
+#' @importFrom httr GET RETRY config status_code content user_agent
 #' @export
 getFRED <- function(...,
                     keep_all = TRUE,
@@ -116,25 +116,10 @@ getFRED <- function(...,
   ## 4.  Helper: fetch one series ----------------------------------
   ## ---------------------------------------------------------------
   get_one <- function(var, col_name, do_lag) {
-    url <- paste0(
-      "https://fred.stlouisfed.org/graph/fredgraph.csv?id=", var
-    )
     message("Downloading ", var)
 
-    # Fetch via httr::GET because readr::read_csv() fails against FRED's
-    # HTTP/2 endpoint ("HTTP/2 stream was not closed cleanly").
     df <- tryCatch(
-      {
-        resp <- httr::GET(
-          url,
-          httr::user_agent("tidyusmacro (https://github.com/mtkonczal/tidyusmacro)")
-        )
-        if (httr::status_code(resp) != 200) {
-          stop("HTTP ", httr::status_code(resp))
-        }
-        body <- httr::content(resp, as = "text", encoding = "UTF-8")
-        readr::read_csv(I(body), col_types = readr::cols())
-      },
+      fred_fetch_csv(var),
       error = function(e) {
         warning("Error downloading ", var, ": ", e$message)
         return(NULL)
@@ -184,4 +169,47 @@ getFRED <- function(...,
 
   purrr::reduce(dfs, joiner) |>
     dplyr::as_tibble()
+}
+
+#' Fetch one FRED series as a raw tibble
+#'
+#' Internal download helper for [getFRED()]. Kept as a separate function so
+#' tests can mock the network layer.
+#'
+#' FRED's `fredgraph.csv` endpoint intermittently resets HTTP/2 streams
+#' ("HTTP/2 stream was not closed cleanly: INTERNAL_ERROR"), which also breaks
+#' `readr::read_csv(url)`. Strategy: retry the request up to 3 times with
+#' backoff; if it still fails with a transport error, retry once forcing
+#' HTTP/1.1, which sidesteps the stream bug entirely.
+#'
+#' @param var A single FRED series ID (already upper-cased).
+#' @return A tibble as parsed from the CSV (date column first, value second).
+#' @noRd
+fred_fetch_csv <- function(var) {
+  url <- paste0("https://fred.stlouisfed.org/graph/fredgraph.csv?id=", var)
+  ua <- httr::user_agent("tidyusmacro (https://github.com/mtkonczal/tidyusmacro)")
+
+  resp <- tryCatch(
+    # terminate_on: don't retry client errors (bad series ID), fail fast
+    httr::RETRY("GET", url, ua,
+      times = 3, quiet = TRUE,
+      terminate_on = c(400, 404)
+    ),
+    error = function(e) e
+  )
+
+  if (inherits(resp, "error")) {
+    # Transport-level failure (e.g. the HTTP/2 stream reset): force HTTP/1.1.
+    # In libcurl, http_version = 2 means CURL_HTTP_VERSION_1_1.
+    resp <- httr::GET(url, ua, httr::config(http_version = 2))
+  }
+
+  if (httr::status_code(resp) != 200) {
+    stop("HTTP ", httr::status_code(resp), " for ", var)
+  }
+
+  body <- httr::content(resp, as = "text", encoding = "UTF-8")
+  # FRED marks missing observations with "." — parse them as NA so the value
+  # column stays numeric instead of silently becoming character.
+  readr::read_csv(I(body), col_types = readr::cols(), na = c("", "NA", "."))
 }
