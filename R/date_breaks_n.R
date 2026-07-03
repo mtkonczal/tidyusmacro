@@ -7,7 +7,13 @@
 #' @param n Integer, keep every n-th date (default = 6).
 #' @param decreasing Logical, if TRUE (default) sorts dates in descending order.
 #'
-#' @return A vector of dates suitable for use as ggplot2 axis breaks.
+#' @return A vector of dates suitable for use as ggplot2 axis breaks. With the
+#'   default \code{decreasing = TRUE}, the first (most recent) date is always
+#'   included, so breaks are anchored to the last observation.
+#'
+#' @seealso \code{\link{date_breaks_gg}}, which returns a breaks
+#'   \emph{function} for \code{scale_x_date()} and clips breaks to the plot
+#'   limits.
 #' @export
 #'
 #' @examples

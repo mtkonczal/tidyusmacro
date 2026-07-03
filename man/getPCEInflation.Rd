@@ -7,14 +7,32 @@
 getPCEInflation(frequency = "M", NIPA_data = NULL)
 }
 \arguments{
-\item{frequency}{Character string indicating the frequency of the data.
-Defaults to \code{"M"} (monthly).}
+\item{frequency}{Character string indicating the frequency of the data:
+\code{"M"} (monthly, the default) or \code{"Q"} (quarterly).
+Also sets the compounding used to annualize
+\code{WDataValue_P1a} (12 for monthly, 4 for quarterly).}
 
 \item{NIPA_data}{Optional data frame. If provided, it will be used as the raw NIPA dataset
-instead of loading fresh data with \code{getNIPAFiles()}.'}
+instead of loading fresh data with \code{getNIPAFiles()}. Make sure
+\code{frequency} matches the frequency of the supplied data, since it
+determines the annualization exponent.}
 }
 \value{
-A \code{tbl_df} (data frame) containing the PCE data with calculated variables.
+A tibble with one row per (date, PCE component), containing the
+columns from \code{\link{getNIPAFiles}} for price-index table
+\code{"U20404"} (including \code{date}, \code{SeriesLabel}, and the price
+index in \code{Value}), plus:
+\item{PCEweight}{Nominal consumption share: component spending divided by
+total PCE (both from table \code{"U20405"}).}
+\item{quantity}{Real quantity index from table \code{"U20403"}.}
+\item{DataValue_P1}{1-period percent change in the price index (decimal).}
+\item{DataValue_P3}{3-period percent change (decimal).}
+\item{DataValue_P6}{6-period percent change (decimal).}
+\item{WDataValue_P1}{Contribution to 1-period PCE inflation:
+\code{DataValue_P1} times the lagged \code{PCEweight}.}
+\item{WDataValue_P1a}{\code{WDataValue_P1} annualized by compounding over
+the periods per year implied by \code{frequency}:
+\code{(1 + x)^12 - 1} for monthly, \code{(1 + x)^4 - 1} for quarterly.}
 }
 \description{
 Downloads and processes BEA NIPA data to compute Personal Consumption Expenditures

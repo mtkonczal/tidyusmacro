@@ -15,12 +15,30 @@
 #'         and calculates period-over-period growth measures.
 #' }
 #'
-#' @param frequency Character string indicating the frequency of the data.
-#'                  Defaults to \code{"M"} (monthly).
+#' @param frequency Character string indicating the frequency of the data:
+#'                  \code{"M"} (monthly, the default) or \code{"Q"} (quarterly).
+#'                  Also sets the compounding used to annualize
+#'                  \code{WDataValue_P1a} (12 for monthly, 4 for quarterly).
 #' @param NIPA_data Optional data frame. If provided, it will be used as the raw NIPA dataset
-#'                  instead of loading fresh data with \code{getNIPAFiles()}.'
+#'                  instead of loading fresh data with \code{getNIPAFiles()}. Make sure
+#'                  \code{frequency} matches the frequency of the supplied data, since it
+#'                  determines the annualization exponent.
 #'
-#' @return A \code{tbl_df} (data frame) containing the PCE data with calculated variables.
+#' @return A tibble with one row per (date, PCE component), containing the
+#'   columns from \code{\link{getNIPAFiles}} for price-index table
+#'   \code{"U20404"} (including \code{date}, \code{SeriesLabel}, and the price
+#'   index in \code{Value}), plus:
+#'   \item{PCEweight}{Nominal consumption share: component spending divided by
+#'     total PCE (both from table \code{"U20405"}).}
+#'   \item{quantity}{Real quantity index from table \code{"U20403"}.}
+#'   \item{DataValue_P1}{1-period percent change in the price index (decimal).}
+#'   \item{DataValue_P3}{3-period percent change (decimal).}
+#'   \item{DataValue_P6}{6-period percent change (decimal).}
+#'   \item{WDataValue_P1}{Contribution to 1-period PCE inflation:
+#'     \code{DataValue_P1} times the lagged \code{PCEweight}.}
+#'   \item{WDataValue_P1a}{\code{WDataValue_P1} annualized by compounding over
+#'     the periods per year implied by \code{frequency}:
+#'     \code{(1 + x)^12 - 1} for monthly, \code{(1 + x)^4 - 1} for quarterly.}
 #'
 #' @importFrom dplyr select distinct lag mutate left_join group_by filter ungroup
 #' @importFrom rlang .data
@@ -33,6 +51,15 @@
 #' @export
 getPCEInflation <- function(frequency = "M", NIPA_data = NULL) {
 
+  # Periods per year for annualization. This was previously hardcoded to 4
+  # (quarterly), which understated annualized monthly contributions.
+  periods_per_year <- switch(toupper(frequency),
+    M = 12,
+    Q = 4,
+    A = 1,
+    stop("Unknown frequency: ", frequency, ". Use \"M\", \"Q\", or \"A\".")
+  )
+
     # Load the full dataset using the specified frequency.
   if(is.null(NIPA_data)){
     full_data <- getNIPAFiles(type = frequency)
@@ -41,10 +68,11 @@ getPCEInflation <- function(frequency = "M", NIPA_data = NULL) {
   }
 
   # ---------------------------------------------------------------------------
-  # Step 1: Extract Total GDP data
+  # Step 1: Extract total PCE
   # ---------------------------------------------------------------------------
-  # Filter for table "U20405" with SeriesCode "DPCERC" to get total GDP,
-  # then rename the value column to TotalGDP.
+  # Filter table "U20405" for SeriesCode "DPCERC" (total personal consumption
+  # expenditures, nominal). Note: the column is named TotalGDP for historical
+  # reasons; it is total PCE, not GDP.
   total_gdp <- full_data %>%
     filter(TableId == "U20405", SeriesCode == "DPCERC") %>%
     dplyr::select(date, TotalGDP = Value)
@@ -52,9 +80,9 @@ getPCEInflation <- function(frequency = "M", NIPA_data = NULL) {
   # ---------------------------------------------------------------------------
   # Step 2: Calculate PCE weights
   # ---------------------------------------------------------------------------
-  # For each date, join with the total GDP data to compute the PCE weight as:
-  # weight = (value from U20405) / TotalGDP.
-  # This approximates the nominal consumption share.
+  # For each date, join with total PCE to compute each component's weight as:
+  # weight = (nominal component spending from U20405) / (total PCE).
+  # This is the nominal consumption share.
   pce_weight <- full_data %>%
     filter(TableId == "U20405") %>%
     left_join(total_gdp, by = "date") %>%
@@ -90,8 +118,9 @@ getPCEInflation <- function(frequency = "M", NIPA_data = NULL) {
     mutate(DataValue_P6 = Value / lag(Value, 6) - 1) %>%
     # Compute weighted 1-period change using the lagged weight.
     mutate(WDataValue_P1 = DataValue_P1 * lag(PCEweight, 1)) %>%
-    # Annualize the weighted 1-period change.
-    mutate(WDataValue_P1a = (1 + WDataValue_P1)^4 - 1) %>%
+    # Annualize the weighted 1-period change by compounding over the number
+    # of periods in a year (12 for monthly, 4 for quarterly).
+    mutate(WDataValue_P1a = (1 + WDataValue_P1)^periods_per_year - 1) %>%
     ungroup()
 
   # Return the processed PCE data frame.

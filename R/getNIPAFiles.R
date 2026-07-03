@@ -11,7 +11,19 @@
 #' @param type A character string indicating the type of data to load.
 #'   For example, "Q" for quarterly or "M" for monthly data. Default is "Q".
 #'
-#' @return A data frame containing the merged and formatted NIPA data.
+#' @return A tibble with one row per (series, period, table line). Because a
+#'   NIPA series can appear on multiple table lines, series-periods are
+#'   duplicated across rows; filter on \code{TableId} (and \code{LineNo})
+#'   before analysis. Key columns:
+#'   \item{SeriesCode}{BEA series mnemonic (from \code{SeriesRegister.txt}).}
+#'   \item{Period}{Raw BEA period string, e.g. \code{"2024Q1"} or \code{"2024M01"}.}
+#'   \item{date}{Period as a \code{Date} (quarters mapped to their final month).}
+#'   \item{Value}{Numeric data value.}
+#'   \item{TableId}{NIPA table identifier, e.g. \code{"U20404"}.}
+#'   \item{LineNo}{Numeric line number within the table.}
+#'   \item{...}{Additional series metadata from \code{SeriesRegister.txt}
+#'     (including \code{SeriesLabel}) and table metadata from
+#'     \code{TablesRegister.txt}.}
 #' @examples
 #' \dontrun{
 #'   nipadata <- getNIPAFiles(type = "Q")

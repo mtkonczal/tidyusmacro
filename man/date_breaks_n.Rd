@@ -14,7 +14,9 @@ date_breaks_n(dates, n = 6, decreasing = TRUE)
 \item{decreasing}{Logical, if TRUE (default) sorts dates in descending order.}
 }
 \value{
-A vector of dates suitable for use as ggplot2 axis breaks.
+A vector of dates suitable for use as ggplot2 axis breaks. With the
+default \code{decreasing = TRUE}, the first (most recent) date is always
+included, so breaks are anchored to the last observation.
 }
 \description{
 Generate a sequence of date breaks for ggplot scales,
@@ -32,4 +34,9 @@ df <- tibble(
 ggplot(df, aes(date, value)) +
   geom_line() +
   scale_x_date(breaks = date_breaks_n(df$date, 6))
+}
+\seealso{
+\code{\link{date_breaks_gg}}, which returns a breaks
+\emph{function} for \code{scale_x_date()} and clips breaks to the plot
+limits.
 }

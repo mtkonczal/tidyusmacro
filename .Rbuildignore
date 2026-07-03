@@ -8,6 +8,7 @@
 ^pkgdown$
 ^\.github$
 ^CLAUDE\.md$
+^check_next\.md$
 ^CLAUDE_dallas_pce\.md$
 ^data-raw$
 ^\.claude$
