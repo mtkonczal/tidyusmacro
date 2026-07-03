@@ -3,6 +3,7 @@
 \name{esp_pal}
 \alias{esp_pal}
 \title{ESP Color Palette}
+<<<<<<< HEAD
 \format{
 A named character vector of three hex colors:
 \describe{
@@ -11,6 +12,8 @@ A named character vector of three hex colors:
 \item{"Soft Green"}{\code{"#70ad8f"}}
 }
 }
+=======
+>>>>>>> worktree-fix-getfred
 \usage{
 esp_pal
 }

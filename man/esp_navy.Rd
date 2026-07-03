@@ -3,9 +3,12 @@
 \name{esp_navy}
 \alias{esp_navy}
 \title{ESP Primary Color (Navy)}
+<<<<<<< HEAD
 \format{
 A named character vector of length 1.
 }
+=======
+>>>>>>> worktree-fix-getfred
 \usage{
 esp_navy
 }

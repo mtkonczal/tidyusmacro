@@ -1,5 +1,6 @@
 # tidyusmacro (development version)
 
+<<<<<<< HEAD
 ## Bug fixes and improvements
 
 * `getPCEInflation()` now annualizes `WDataValue_P1a` using the compounding
@@ -25,6 +26,18 @@
   `esp_pal`, and `esp_navy`, documented return columns for
   `getNIPAFiles()` and `getPCEInflation()`, and cross-references between
   `date_breaks_gg()` and `date_breaks_n()`.
+=======
+* `getFRED()` downloads are now more robust: transient failures are retried
+  up to 3 times with backoff, and transport-level errors (FRED's intermittent
+  "HTTP/2 stream was not closed cleanly" resets) trigger a fallback request
+  over HTTP/1.1. Bad series IDs (HTTP 400/404) still fail fast.
+* `getFRED()` now parses FRED's `"."` missing-value marker as `NA`, so value
+  columns stay numeric instead of silently becoming character.
+* The network layer of `getFRED()` was factored into an internal helper so it
+  can be mocked; added a full offline unit-test suite plus live integration
+  tests (skipped on CRAN and when offline) for `getFRED()` and
+  `getUnrateFRED()`.
+>>>>>>> worktree-fix-getfred
 
 # tidyusmacro 0.2.0
 
