@@ -1,5 +1,43 @@
 # Changelog
 
+## tidyusmacro (development version)
+
+### Bug fixes and improvements
+
+- [`getPCEInflation()`](https://www.mikekonczal.com/tidyusmacro/reference/getPCEInflation.md)
+  now annualizes `WDataValue_P1a` using the compounding implied by
+  `frequency` (12 periods for monthly, 4 for quarterly). It previously
+  always used `^4`, which understated annualized contributions for
+  monthly data (the default) by roughly a factor of three. Monthly
+  values of `WDataValue_P1a` will change; other columns are unaffected.
+- [`getBLSFiles()`](https://www.mikekonczal.com/tidyusmacro/reference/getBLSFiles.md)
+  join handling is hardened: colliding non-key columns in lookup files
+  are now detected dynamically and prefixed with the file name (in
+  addition to the always-prefixed metadata columns), all joins validate
+  `relationship = "many-to-one"` so a non-unique lookup key errors
+  loudly instead of silently duplicating rows, and a final invariant
+  check guarantees no `.x`/`.y` columns. Output for all currently
+  supported data sources is unchanged.
+- tidyusmacro now requires dplyr \>= 1.1.0 (for join `relationship`
+  validation).
+- `getBLSFiles("su")` works again: the LAU state/region/division lookup
+  is now requested as `la.state_region_division` (a misspelling,
+  `state_region_divison`, made every `su` call fail with a 404) and
+  joined on its actual key, `srd_code`, so `srd_text` is attached to the
+  output.
+- Documentation improvements throughout: a package-level help page
+  ([`?tidyusmacro`](https://www.mikekonczal.com/tidyusmacro/reference/tidyusmacro-package.md)),
+  examples and fuller descriptions for
+  [`theme_esp()`](https://www.mikekonczal.com/tidyusmacro/reference/esp_theme.md),
+  `esp_pal`, and `esp_navy`, documented return columns for
+  [`getNIPAFiles()`](https://www.mikekonczal.com/tidyusmacro/reference/getNIPAFiles.md)
+  and
+  [`getPCEInflation()`](https://www.mikekonczal.com/tidyusmacro/reference/getPCEInflation.md),
+  and cross-references between
+  [`date_breaks_gg()`](https://www.mikekonczal.com/tidyusmacro/reference/date_breaks_gg.md)
+  and
+  [`date_breaks_n()`](https://www.mikekonczal.com/tidyusmacro/reference/date_breaks_n.md).
+
 ## tidyusmacro 0.2.0
 
 CRAN release: 2026-06-12

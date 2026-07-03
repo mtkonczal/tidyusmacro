@@ -15,7 +15,7 @@ it merges the datasets."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">tidyusmacro</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,8 +72,34 @@ For example, "Q" for quarterly or "M" for monthly data. Default is "Q".</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A data frame containing the merged and formatted NIPA data.</p>
-    </div>
+    <p>A tibble with one row per (series, period, table line). Because a
+NIPA series can appear on multiple table lines, series-periods are
+duplicated across rows; filter on <code>TableId</code> (and <code>LineNo</code>)
+before analysis. Key columns:</p>
+<dl><dt>SeriesCode</dt>
+<dd><p>BEA series mnemonic (from <code>SeriesRegister.txt</code>).</p></dd>
+
+<dt>Period</dt>
+<dd><p>Raw BEA period string, e.g. <code>"2024Q1"</code> or <code>"2024M01"</code>.</p></dd>
+
+<dt>date</dt>
+<dd><p>Period as a <code>Date</code> (quarters mapped to their final month).</p></dd>
+
+<dt>Value</dt>
+<dd><p>Numeric data value.</p></dd>
+
+<dt>TableId</dt>
+<dd><p>NIPA table identifier, e.g. <code>"U20404"</code>.</p></dd>
+
+<dt>LineNo</dt>
+<dd><p>Numeric line number within the table.</p></dd>
+
+<dt>...</dt>
+<dd><p>Additional series metadata from <code>SeriesRegister.txt</code>
+(including <code>SeriesLabel</code>) and table metadata from
+<code>TablesRegister.txt</code>.</p></dd>
+
+</dl></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

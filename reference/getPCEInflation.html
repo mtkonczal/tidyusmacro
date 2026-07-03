@@ -11,7 +11,7 @@ preferred inflation measure."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">tidyusmacro</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -52,19 +52,51 @@ preferred inflation measure.</p>
 
 
 <dl><dt id="arg-frequency">frequency<a class="anchor" aria-label="anchor" href="#arg-frequency"></a></dt>
-<dd><p>Character string indicating the frequency of the data.
-Defaults to <code>"M"</code> (monthly).</p></dd>
+<dd><p>Character string indicating the frequency of the data:
+<code>"M"</code> (monthly, the default) or <code>"Q"</code> (quarterly).
+Also sets the compounding used to annualize
+<code>WDataValue_P1a</code> (12 for monthly, 4 for quarterly).</p></dd>
 
 
 <dt id="arg-nipa-data">NIPA_data<a class="anchor" aria-label="anchor" href="#arg-nipa-data"></a></dt>
 <dd><p>Optional data frame. If provided, it will be used as the raw NIPA dataset
-instead of loading fresh data with <code><a href="getNIPAFiles.html">getNIPAFiles()</a></code>.'</p></dd>
+instead of loading fresh data with <code><a href="getNIPAFiles.html">getNIPAFiles()</a></code>. Make sure
+<code>frequency</code> matches the frequency of the supplied data, since it
+determines the annualization exponent.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A <code>tbl_df</code> (data frame) containing the PCE data with calculated variables.</p>
-    </div>
+    <p>A tibble with one row per (date, PCE component), containing the
+columns from <code><a href="getNIPAFiles.html">getNIPAFiles</a></code> for price-index table
+<code>"U20404"</code> (including <code>date</code>, <code>SeriesLabel</code>, and the price
+index in <code>Value</code>), plus:</p>
+<dl><dt>PCEweight</dt>
+<dd><p>Nominal consumption share: component spending divided by
+total PCE (both from table <code>"U20405"</code>).</p></dd>
+
+<dt>quantity</dt>
+<dd><p>Real quantity index from table <code>"U20403"</code>.</p></dd>
+
+<dt>DataValue_P1</dt>
+<dd><p>1-period percent change in the price index (decimal).</p></dd>
+
+<dt>DataValue_P3</dt>
+<dd><p>3-period percent change (decimal).</p></dd>
+
+<dt>DataValue_P6</dt>
+<dd><p>6-period percent change (decimal).</p></dd>
+
+<dt>WDataValue_P1</dt>
+<dd><p>Contribution to 1-period PCE inflation:
+<code>DataValue_P1</code> times the lagged <code>PCEweight</code>.</p></dd>
+
+<dt>WDataValue_P1a</dt>
+<dd><p><code>WDataValue_P1</code> annualized by compounding over
+the periods per year implied by <code>frequency</code>:
+<code>(1 + x)^12 - 1</code> for monthly, <code>(1 + x)^4 - 1</code> for quarterly.</p></dd>
+
+</dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The function performs the following steps:</p><ol><li><p>Loads NIPA data using <code><a href="getNIPAFiles.html">getNIPAFiles</a></code> (or uses pre-loaded data).</p></li>

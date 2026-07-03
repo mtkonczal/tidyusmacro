@@ -25,7 +25,16 @@ date_breaks_n(dates, n = 6, decreasing = TRUE)
 
 ## Value
 
-A vector of dates suitable for use as ggplot2 axis breaks.
+A vector of dates suitable for use as ggplot2 axis breaks. With the
+default `decreasing = TRUE`, the first (most recent) date is always
+included, so breaks are anchored to the last observation.
+
+## See also
+
+[`date_breaks_gg`](https://www.mikekonczal.com/tidyusmacro/reference/date_breaks_gg.md),
+which returns a breaks *function* for
+[`scale_x_date()`](https://ggplot2.tidyverse.org/reference/scale_date.html)
+and clips breaks to the plot limits.
 
 ## Examples
 

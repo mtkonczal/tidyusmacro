@@ -30,7 +30,39 @@ getNIPAFiles(
 
 ## Value
 
-A data frame containing the merged and formatted NIPA data.
+A tibble with one row per (series, period, table line). Because a NIPA
+series can appear on multiple table lines, series-periods are duplicated
+across rows; filter on `TableId` (and `LineNo`) before analysis. Key
+columns:
+
+- SeriesCode:
+
+  BEA series mnemonic (from `SeriesRegister.txt`).
+
+- Period:
+
+  Raw BEA period string, e.g. `"2024Q1"` or `"2024M01"`.
+
+- date:
+
+  Period as a `Date` (quarters mapped to their final month).
+
+- Value:
+
+  Numeric data value.
+
+- TableId:
+
+  NIPA table identifier, e.g. `"U20404"`.
+
+- LineNo:
+
+  Numeric line number within the table.
+
+- ...:
+
+  Additional series metadata from `SeriesRegister.txt` (including
+  `SeriesLabel`) and table metadata from `TablesRegister.txt`.
 
 ## Examples
 

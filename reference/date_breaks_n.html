@@ -9,7 +9,7 @@ taking every nth unique date."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">tidyusmacro</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,15 @@ taking every <code>n</code>th unique date.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A vector of dates suitable for use as ggplot2 axis breaks.</p>
+    <p>A vector of dates suitable for use as ggplot2 axis breaks. With the
+default <code>decreasing = TRUE</code>, the first (most recent) date is always
+included, so breaks are anchored to the last observation.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p><code><a href="date_breaks_gg.html">date_breaks_gg</a></code>, which returns a breaks
+<em>function</em> for <code><a href="https://ggplot2.tidyverse.org/reference/scale_date.html" class="external-link">scale_x_date()</a></code> and clips breaks to the plot
+limits.</p></div>
     </div>
 
     <div class="section level2">

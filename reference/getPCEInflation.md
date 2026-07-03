@@ -14,19 +14,57 @@ getPCEInflation(frequency = "M", NIPA_data = NULL)
 
 - frequency:
 
-  Character string indicating the frequency of the data. Defaults to
-  `"M"` (monthly).
+  Character string indicating the frequency of the data: `"M"` (monthly,
+  the default) or `"Q"` (quarterly). Also sets the compounding used to
+  annualize `WDataValue_P1a` (12 for monthly, 4 for quarterly).
 
 - NIPA_data:
 
   Optional data frame. If provided, it will be used as the raw NIPA
   dataset instead of loading fresh data with
-  [`getNIPAFiles()`](https://www.mikekonczal.com/tidyusmacro/reference/getNIPAFiles.md).'
+  [`getNIPAFiles()`](https://www.mikekonczal.com/tidyusmacro/reference/getNIPAFiles.md).
+  Make sure `frequency` matches the frequency of the supplied data,
+  since it determines the annualization exponent.
 
 ## Value
 
-A `tbl_df` (data frame) containing the PCE data with calculated
-variables.
+A tibble with one row per (date, PCE component), containing the columns
+from
+[`getNIPAFiles`](https://www.mikekonczal.com/tidyusmacro/reference/getNIPAFiles.md)
+for price-index table `"U20404"` (including `date`, `SeriesLabel`, and
+the price index in `Value`), plus:
+
+- PCEweight:
+
+  Nominal consumption share: component spending divided by total PCE
+  (both from table `"U20405"`).
+
+- quantity:
+
+  Real quantity index from table `"U20403"`.
+
+- DataValue_P1:
+
+  1-period percent change in the price index (decimal).
+
+- DataValue_P3:
+
+  3-period percent change (decimal).
+
+- DataValue_P6:
+
+  6-period percent change (decimal).
+
+- WDataValue_P1:
+
+  Contribution to 1-period PCE inflation: `DataValue_P1` times the
+  lagged `PCEweight`.
+
+- WDataValue_P1a:
+
+  `WDataValue_P1` annualized by compounding over the periods per year
+  implied by `frequency`: `(1 + x)^12 - 1` for monthly, `(1 + x)^4 - 1`
+  for quarterly.
 
 ## Details
 

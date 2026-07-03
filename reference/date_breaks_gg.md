@@ -31,6 +31,12 @@ date_breaks_gg(n = 6, last, decreasing = FALSE)
 
 A function usable in `scale_x_date(breaks = ...)`.
 
+## See also
+
+[`date_breaks_n`](https://www.mikekonczal.com/tidyusmacro/reference/date_breaks_n.md),
+which takes the date vector directly and returns a vector of breaks
+instead of a breaks function.
+
 ## Examples
 
 ``` r
