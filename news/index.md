@@ -2,7 +2,7 @@
 
 ## tidyusmacro (development version)
 
-### Bug fixes and improvements
+\<\<\<\<\<\<\< HEAD \## Bug fixes and improvements
 
 - [`getPCEInflation()`](https://www.mikekonczal.com/tidyusmacro/reference/getPCEInflation.md)
   now annualizes `WDataValue_P1a` using the compounding implied by
@@ -37,6 +37,24 @@
   [`date_breaks_gg()`](https://www.mikekonczal.com/tidyusmacro/reference/date_breaks_gg.md)
   and
   [`date_breaks_n()`](https://www.mikekonczal.com/tidyusmacro/reference/date_breaks_n.md).
+  =======
+- [`getFRED()`](https://www.mikekonczal.com/tidyusmacro/reference/getFRED.md)
+  downloads are now more robust: transient failures are retried up to 3
+  times with backoff, and transport-level errors (FRED’s intermittent
+  “HTTP/2 stream was not closed cleanly” resets) trigger a fallback
+  request over HTTP/1.1. Bad series IDs (HTTP 400/404) still fail fast.
+- [`getFRED()`](https://www.mikekonczal.com/tidyusmacro/reference/getFRED.md)
+  now parses FRED’s `"."` missing-value marker as `NA`, so value columns
+  stay numeric instead of silently becoming character.
+- The network layer of
+  [`getFRED()`](https://www.mikekonczal.com/tidyusmacro/reference/getFRED.md)
+  was factored into an internal helper so it can be mocked; added a full
+  offline unit-test suite plus live integration tests (skipped on CRAN
+  and when offline) for
+  [`getFRED()`](https://www.mikekonczal.com/tidyusmacro/reference/getFRED.md)
+  and
+  [`getUnrateFRED()`](https://www.mikekonczal.com/tidyusmacro/reference/getUnrateFRED.md).
+  \>\>\>\>\>\>\> worktree-fix-getfred
 
 ## tidyusmacro 0.2.0
 
