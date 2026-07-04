@@ -2,15 +2,24 @@
 
 Utilities to retrieve and tidy U.S. macroeconomic data series from
 public government data providers. Functions streamline access to series
-from the Federal Reserve Bank of St. Louis Federal Reserve Economic Data
-(FRED), the Bureau of Labor Statistics (BLS) flat files, and the Bureau
-of Economic Analysis (BEA) National Income and Product Accounts (NIPA)
-tables, then return consistent, tidy data frames ready for modeling and
-graphics.
+from the the Bureau of Labor Statistics (BLS) full data flat files for
+popular releases like employment and inflation, the Bureau of Economic
+Analysis National Income and Product Accounts (NIPA) tables that give
+GDP and related accounts, and Federal Reserve Bank of St. Louis Federal
+Reserve Economic Data (FRED). It then return consistent, tidy data
+frames ready for modeling and graphics.
 
-The package includes helpers for date alignment, log-linear projections,
-and common macro diagnostics, along with convenience plot builders for
-quick publication-quality charts.
+These tools pull the entire flat files of the corresponding set, which
+makes them useful for exploring data, doing in-depth research, and also
+real-time analysis following the releases. For BLS and BEA these pulls
+are updated right as they go live. (FRED is usually updated 40 minutes
+later.) Though note for jobs numbers it can take 5-10 minutes right at
+launch time; API calls might work better.
+
+The package also includes helpers for date alignment, log-linear
+projections, and common macro diagnostics, along with convenience plot
+builders for quick publication-quality charts in R tidyverse’s ggplot2
+format.
 
 ## Installation
 
@@ -27,20 +36,6 @@ devtools::install_github("mtkonczal/tidyusmacro")
 
 ### Data Retrieval
 
-#### `getFRED`
-
-Downloads and merges economic data series from the Federal Reserve
-Economic Data (FRED) API.
-
-``` r
-
-# Named arguments give friendly column names
-fred_data <- getFRED(prime_epop = "LNS12300060", cpi = "CPIAUCSL")
-
-# Unnamed arguments use lowercase ticker as column name
-fred_data <- getFRED("UNRATE", "PAYEMS")
-```
-
 #### `getBLSFiles`
 
 Downloads and processes data from Bureau of Labor Statistics flat files.
@@ -51,6 +46,16 @@ Survey).
 
 cpi_data <- getBLSFiles(data_source = "cpi", email = "user@example.com")
 jolts_data <- getBLSFiles(data_source = "jolts", email = "user@example.com")
+```
+
+#### `getCESRevisions`
+
+Downloads the revisions table of the Current Employment Survey (CES)
+total jobs numbers straight from their website.
+
+``` r
+
+revisions_df <- getCESRevisions()
 ```
 
 #### `getNIPAFiles`
@@ -73,6 +78,20 @@ data with weights and growth measures.
 
 pce_monthly <- getPCEInflation("M")
 pce_quarterly <- getPCEInflation("Q")
+```
+
+#### `getFRED`
+
+Downloads and merges economic data series from the Federal Reserve
+Economic Data (FRED) API.
+
+``` r
+
+# Named arguments give friendly column names
+fred_data <- getFRED(prime_epop = "LNS12300060", cpi = "CPIAUCSL")
+
+# Unnamed arguments use lowercase ticker as column name
+fred_data <- getFRED("UNRATE", "PAYEMS")
 ```
 
 #### `getUnrateFRED`

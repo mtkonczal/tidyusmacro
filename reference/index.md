@@ -17,6 +17,8 @@ Functions to download data from government sources
   : Get Full Unemployment Rate from FRED
 - [`getDallasTrimPCE()`](https://www.mikekonczal.com/tidyusmacro/reference/getDallasTrimPCE.md)
   : Build the Dallas Fed trimmed-mean PCE component panel
+- [`getCESRevisions()`](https://www.mikekonczal.com/tidyusmacro/reference/getCESRevisions.md)
+  : Download CES Monthly Jobs Revisions
 
 ## Statistical Functions
 

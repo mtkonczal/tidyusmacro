@@ -48,8 +48,9 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="tidyusmacro">tidyusmacro<a class="anchor" aria-label="anchor" href="#tidyusmacro"></a>
 </h1></div>
-<p>Utilities to retrieve and tidy U.S. macroeconomic data series from public government data providers. Functions streamline access to series from the Federal Reserve Bank of St. Louis Federal Reserve Economic Data (FRED), the Bureau of Labor Statistics (BLS) flat files, and the Bureau of Economic Analysis (BEA) National Income and Product Accounts (NIPA) tables, then return consistent, tidy data frames ready for modeling and graphics.</p>
-<p>The package includes helpers for date alignment, log-linear projections, and common macro diagnostics, along with convenience plot builders for quick publication-quality charts.</p>
+<p>Utilities to retrieve and tidy U.S. macroeconomic data series from public government data providers. Functions streamline access to series from the the Bureau of Labor Statistics (BLS) full data flat files for popular releases like employment and inflation, the Bureau of Economic Analysis National Income and Product Accounts (NIPA) tables that give GDP and related accounts, and Federal Reserve Bank of St. Louis Federal Reserve Economic Data (FRED). It then return consistent, tidy data frames ready for modeling and graphics.</p>
+<p>These tools pull the entire flat files of the corresponding set, which makes them useful for exploring data, doing in-depth research, and also real-time analysis following the releases. For BLS and BEA these pulls are updated right as they go live. (FRED is usually updated 40 minutes later.) Though note for jobs numbers it can take 5-10 minutes right at launch time; API calls might work better.</p>
+<p>The package also includes helpers for date alignment, log-linear projections, and common macro diagnostics, along with convenience plot builders for quick publication-quality charts in R tidyverse’s ggplot2 format.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -67,25 +68,21 @@
 <h3 id="data-retrieval">Data Retrieval<a class="anchor" aria-label="anchor" href="#data-retrieval"></a>
 </h3>
 <div class="section level4">
-<h4 id="getfred">
-<code>getFRED</code><a class="anchor" aria-label="anchor" href="#getfred"></a>
-</h4>
-<p>Downloads and merges economic data series from the Federal Reserve Economic Data (FRED) API.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Named arguments give friendly column names</span></span>
-<span><span class="va">fred_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getFRED.html">getFRED</a></span><span class="op">(</span>prime_epop <span class="op">=</span> <span class="st">"LNS12300060"</span>, cpi <span class="op">=</span> <span class="st">"CPIAUCSL"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Unnamed arguments use lowercase ticker as column name</span></span>
-<span><span class="va">fred_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getFRED.html">getFRED</a></span><span class="op">(</span><span class="st">"UNRATE"</span>, <span class="st">"PAYEMS"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level4">
 <h4 id="getblsfiles">
 <code>getBLSFiles</code><a class="anchor" aria-label="anchor" href="#getblsfiles"></a>
 </h4>
 <p>Downloads and processes data from Bureau of Labor Statistics flat files. Supports CPI, ECI, JOLTS, CPS, CES, and CEX (Consumer Expenditure Survey).</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cpi_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getBLSFiles.html">getBLSFiles</a></span><span class="op">(</span>data_source <span class="op">=</span> <span class="st">"cpi"</span>, email <span class="op">=</span> <span class="st">"user@example.com"</span><span class="op">)</span></span>
 <span><span class="va">jolts_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getBLSFiles.html">getBLSFiles</a></span><span class="op">(</span>data_source <span class="op">=</span> <span class="st">"jolts"</span>, email <span class="op">=</span> <span class="st">"user@example.com"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="getcesrevisions">
+<code>getCESRevisions</code><a class="anchor" aria-label="anchor" href="#getcesrevisions"></a>
+</h4>
+<p>Downloads the revisions table of the Current Employment Survey (CES) total jobs numbers straight from their website.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">revisions_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getCESRevisions.html">getCESRevisions</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="getnipafiles">
@@ -106,11 +103,23 @@
 <span><span class="va">pce_quarterly</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getPCEInflation.html">getPCEInflation</a></span><span class="op">(</span><span class="st">"Q"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
+<h4 id="getfred">
+<code>getFRED</code><a class="anchor" aria-label="anchor" href="#getfred"></a>
+</h4>
+<p>Downloads and merges economic data series from the Federal Reserve Economic Data (FRED) API.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Named arguments give friendly column names</span></span>
+<span><span class="va">fred_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getFRED.html">getFRED</a></span><span class="op">(</span>prime_epop <span class="op">=</span> <span class="st">"LNS12300060"</span>, cpi <span class="op">=</span> <span class="st">"CPIAUCSL"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Unnamed arguments use lowercase ticker as column name</span></span>
+<span><span class="va">fred_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getFRED.html">getFRED</a></span><span class="op">(</span><span class="st">"UNRATE"</span>, <span class="st">"PAYEMS"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
 <h4 id="getunratefred">
 <code>getUnrateFRED</code><a class="anchor" aria-label="anchor" href="#getunratefred"></a>
 </h4>
 <p>Convenience function to download unemployment level and labor force from FRED and calculate the unemployment rate.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">unrate_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getUnrateFRED.html">getUnrateFRED</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
@@ -118,7 +127,7 @@
 <code>getDallasTrimPCE</code><a class="anchor" aria-label="anchor" href="#getdallastrimpce"></a>
 </h4>
 <p>Builds the component-level panel underlying the Dallas Fed Trimmed Mean PCE inflation rate: monthly price changes, Fisher expenditure-share weights, and flags for which components are trimmed each month. Useful for replicating the trimmed-mean rate or analyzing what gets trimmed.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Default 24/31 Dallas Fed trim</span></span>
 <span><span class="va">panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getDallasTrimPCE.html">getDallasTrimPCE</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -137,7 +146,7 @@
 <code>logLinearProjection</code><a class="anchor" aria-label="anchor" href="#loglinearprojection"></a>
 </h4>
 <p>Performs log-linear projections on historical data. Designed for use within dplyr verbs.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">data</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
@@ -157,7 +166,7 @@
 <code>theme_esp</code><a class="anchor" aria-label="anchor" href="#theme_esp"></a>
 </h4>
 <p>Custom ggplot2 theme for Economic Security Project graphics with cream background and clean styling.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">data</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">date</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -170,7 +179,7 @@
 <a class="anchor" aria-label="anchor" href="#scale_color_esp--scale_fill_esp"></a>
 </h4>
 <p>ESP-branded color scales for ggplot2.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">data</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">date</span>, <span class="va">value</span>, color <span class="op">=</span> <span class="va">category</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="reference/esp_theme.html">scale_color_esp</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
@@ -181,7 +190,7 @@
 <code>date_breaks_gg</code><a class="anchor" aria-label="anchor" href="#date_breaks_gg"></a>
 </h4>
 <p>Creates intelligent date breaks for ggplot2 that always include the last data point.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">data</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">date</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_date.html" class="external-link">scale_x_date</a></span><span class="op">(</span>breaks <span class="op">=</span> <span class="fu"><a href="reference/date_breaks_gg.html">date_breaks_gg</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">6</span>, last <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">date</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -191,7 +200,7 @@
 <code>date_breaks_n</code><a class="anchor" aria-label="anchor" href="#date_breaks_n"></a>
 </h4>
 <p>Generates evenly spaced date breaks by selecting every nth unique date.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">data</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">date</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_date.html" class="external-link">scale_x_date</a></span><span class="op">(</span>breaks <span class="op">=</span> <span class="fu"><a href="reference/date_breaks_n.html">date_breaks_n</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">date</span>, n <span class="op">=</span> <span class="fl">6</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -206,7 +215,7 @@
 <code>cesDiffusionIndex</code><a class="anchor" aria-label="anchor" href="#cesdiffusionindex"></a>
 </h4>
 <p>A tibble with 250 rows mapping CES industry codes to industry titles.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">cesDiffusionIndex</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
@@ -214,7 +223,7 @@
 <code>dallasTrimPCEcomponents</code><a class="anchor" aria-label="anchor" href="#dallastrimpcecomponents"></a>
 </h4>
 <p>The 177-component dictionary used by <code>getDallasTrimPCE</code>, mapping Dallas Fed trimmed-mean PCE components to BEA NIPA series codes and line numbers (Table 2.4.4U).</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">dallasTrimPCEcomponents</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
