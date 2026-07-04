@@ -23,6 +23,7 @@ reference:
   - getPCEInflation
   - getUnrateFRED
   - getDallasTrimPCE
+  - getCESRevisions
 
 - title: Statistical Functions
   desc: Analysis and projection tools
