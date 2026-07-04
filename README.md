@@ -2,6 +2,8 @@
 
 Utilities to retrieve and tidy U.S. macroeconomic data series from public government data providers. Functions streamline access to series from the the Bureau of Labor Statistics (BLS) full data flat files for popular releases like employment and inflation, the Bureau of Economic Analysis National Income and Product Accounts (NIPA) tables that give GDP and related accounts, and Federal Reserve Bank of St. Louis Federal Reserve Economic Data (FRED). It then return consistent, tidy data frames ready for modeling and graphics.
 
+These tools pull the entire flat files of the corresponding set, which makes them useful for exploring data, doing in-depth research, and also real-time analysis following the releases. For BLS and BEA these pulls are updated right as they go live. (FRED is usually updated 40 minutes later.) Though note for jobs numbers it can take 5-10 minutes right at launch time; API calls might work better.
+
 The package also includes helpers for date alignment, log-linear projections, and common macro diagnostics, along with convenience plot builders for quick publication-quality charts in R tidyverse's ggplot2 format.
 
 ## Installation
@@ -25,6 +27,14 @@ Downloads and processes data from Bureau of Labor Statistics flat files. Support
 ```r
 cpi_data <- getBLSFiles(data_source = "cpi", email = "user@example.com")
 jolts_data <- getBLSFiles(data_source = "jolts", email = "user@example.com")
+```
+
+#### `getCESRevisions`
+
+Downloads the revisions table of the Current Employment Survey (CES) total jobs numbers straight from their website.
+
+```r
+revisions_df <- getCESRevisions()
 ```
 
 #### `getNIPAFiles`
