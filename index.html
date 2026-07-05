@@ -13,6 +13,7 @@
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Downloading and Cleaning U.S. Macroeconomic Data">
 <meta name="description" content="Utilities to retrieve and tidy U.S. macroeconomic data series from public government data providers. Functions streamline access to series from the Federal Reserve Bank of St. Louis Federal Reserve Economic Data (FRED), the Bureau of Labor Statistics flat files, and the Bureau of Economic Analysis National Income and Product Accounts tables, then return consistent, tidy data frames ready for modeling and graphics. The package includes helpers for date alignment, log-linear projections, and common macro diagnostics, along with convenience plot builders for quick publication-quality charts.">
 <meta property="og:description" content="Utilities to retrieve and tidy U.S. macroeconomic data series from public government data providers. Functions streamline access to series from the Federal Reserve Bank of St. Louis Federal Reserve Economic Data (FRED), the Bureau of Labor Statistics flat files, and the Bureau of Economic Analysis National Income and Product Accounts tables, then return consistent, tidy data frames ready for modeling and graphics. The package includes helpers for date alignment, log-linear projections, and common macro diagnostics, along with convenience plot builders for quick publication-quality charts.">
+<meta property="og:image" content="https://www.mikekonczal.com/tidyusmacro/logo.png">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -46,8 +47,10 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="tidyusmacro">tidyusmacro<a class="anchor" aria-label="anchor" href="#tidyusmacro"></a>
-</h1></div>
+<div class="page-header">
+<img src="logo.png" class="logo" alt=""><h1 id="tidyusmacro-">tidyusmacro <a class="anchor" aria-label="anchor" href="#tidyusmacro-"></a>
+</h1>
+</div>
 <p>Utilities to retrieve and tidy U.S. macroeconomic data series from public government data providers. Functions streamline access to series from the the Bureau of Labor Statistics (BLS) full data flat files for popular releases like employment and inflation, the Bureau of Economic Analysis National Income and Product Accounts (NIPA) tables that give GDP and related accounts, and Federal Reserve Bank of St. Louis Federal Reserve Economic Data (FRED). It then return consistent, tidy data frames ready for modeling and graphics.</p>
 <p>These tools pull the entire flat files of the corresponding set, which makes them useful for exploring data, doing in-depth research, and also real-time analysis following the releases. For BLS and BEA these pulls are updated right as they go live. (FRED is usually updated 40 minutes later.) Though note for jobs numbers it can take 5-10 minutes right at launch time; API calls might work better.</p>
 <p>The package also includes helpers for date alignment, log-linear projections, and common macro diagnostics, along with convenience plot builders for quick publication-quality charts in R tidyverse’s ggplot2 format.</p>
