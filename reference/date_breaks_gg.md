@@ -1,9 +1,8 @@
 # Date breaks anchored to last data month (for ggplot)
 
-Create a breaks function for
-[`scale_x_date()`](https://ggplot2.tidyverse.org/reference/scale_date.html)
-that always includes the last actual data month and then selects every
-`n`th month counting backward.
+Create a breaks function for `scale_x_date()` that always includes the
+last actual data month and then selects every `n`th month counting
+backward.
 
 ## Usage
 
