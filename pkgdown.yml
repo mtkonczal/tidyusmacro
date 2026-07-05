@@ -3,7 +3,7 @@ pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   tidyusmacro: tidyusmacro.html
-last_built: 2026-07-05T03:18Z
+last_built: 2026-07-05T03:23Z
 urls:
   reference: https://www.mikekonczal.com/tidyusmacro/reference
   article: https://www.mikekonczal.com/tidyusmacro/articles
