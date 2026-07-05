@@ -1,0 +1,5 @@
+/* pkgdown renders the home-page hex at width: 100px (120px on large
+   screens), ignoring the height attribute in README.md. The source logo
+   is 518x600, so it scales up cleanly. */
+img.logo { width: 170px; }
+@media (max-width: 575.98px) { img.logo { width: 120px; } }
