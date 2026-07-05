@@ -1,4 +1,4 @@
-# tidyusmacro
+# tidyusmacro <img src="man/figures/logo.png" align="right" height="139" alt="" />
 
 Utilities to retrieve and tidy U.S. macroeconomic data series from public government data providers. Functions streamline access to series from the the Bureau of Labor Statistics (BLS) full data flat files for popular releases like employment and inflation, the Bureau of Economic Analysis National Income and Product Accounts (NIPA) tables that give GDP and related accounts, and Federal Reserve Bank of St. Louis Federal Reserve Economic Data (FRED). It then return consistent, tidy data frames ready for modeling and graphics.
 
