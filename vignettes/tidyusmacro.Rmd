@@ -34,6 +34,35 @@ cpi_data <- getBLSFiles(data_source = "cpi", email = "user@example.com")
 jolts_data <- getBLSFiles(data_source = "jolts", email = "user@example.com")
 ```
 
+CPI arrives with monthly relative importance already attached, from BLS's
+`cu.aspect` file: `weight` for the observation month, plus `weight_lag1` and
+`weight_lag12`, which are the weights a 1-month and 12-month contribution
+calculation actually needs. Coverage is U.S. city average from March 2012
+forward; weights are `NA` outside that rather than back-filled. They are keyed
+on item code and month, not series ID, so seasonally adjusted series carry them
+too. Pass `weights = FALSE` to skip the extra download.
+
+```{r}
+library(dplyr)
+
+# Contribution of each item to the 12-month change in the all items index,
+# in percentage points.
+contributions <- cpi_data |>
+  filter(area_code == "0000", seasonal == "U", periodicity_code == "R") |>
+  arrange(series_id, date) |>
+  group_by(series_id) |>
+  mutate(contribution_12m = weight_lag12 * (value / lag(value, 12) - 1)) |>
+  ungroup()
+```
+
+`getCPIAspects()` returns the rest of the metadata in that file: BLS's own
+contribution decomposition (`W1`, `WC`), median standard errors on the published
+percent changes (`M1`, `MC`), and seasonal factors (`F`).
+
+```{r}
+effects <- getCPIAspects("user@example.com", aspect_type = c("W1", "WC"))
+```
+
 `getCESRevisions()` downloads the revisions table of the Current Employment Survey (CES) total jobs numbers straight from the BLS website.
 
 ```{r}

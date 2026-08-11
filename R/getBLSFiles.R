@@ -22,6 +22,10 @@
 #'   }
 #' @param email Character string with your email address. Required by BLS for
 #'   identifying API users. Set as the HTTP User-Agent header.
+#' @param weights Logical; for \code{data_source = "cpi"} only. When \code{TRUE}
+#'   (the default), also downloads \code{cu.aspect} and attaches monthly relative
+#'   importance. Ignored for every other data source. Set to \code{FALSE} to skip
+#'   the extra ~31 MB download.
 #'
 #' @return A tibble containing the merged data with columns for:
 #'   \item{series_id}{Unique identifier for each data series}
@@ -29,6 +33,13 @@
 #'   \item{value}{Numeric data value}
 #'   \item{...}{Additional metadata columns vary by data source (e.g., item codes,
 #'     industry codes, area codes)}
+#'   For CPI with \code{weights = TRUE}, three further columns:
+#'   \item{weight}{Relative importance in the observation month, in percent of
+#'     all items}
+#'   \item{weight_lag1}{Relative importance one month earlier; the correct
+#'     weight for a 1-month contribution}
+#'   \item{weight_lag12}{Relative importance twelve months earlier; the correct
+#'     weight for a 12-month contribution}
 #'
 #' @details
 #' The function constructs URLs to BLS flat files at
@@ -37,20 +48,59 @@
 #' data file. Date parsing handles both monthly (most sources) and quarterly
 #' (ECI) data frequencies.
 #'
+#' @section CPI relative importance:
+#' Relative importance comes from \code{cu.aspect} (aspect type \code{"I"}),
+#' which BLS restamps with every CPI release. Three things about the join are
+#' worth knowing:
+#'
+#' \itemize{
+#'   \item It is keyed on \code{area_code} + \code{item_code} + \code{date}, not
+#'     on \code{series_id}. BLS publishes relative importance only on the not
+#'     seasonally adjusted series (\code{CUUR...}), but the weight describes the
+#'     item, not the adjustment, so joining on \code{series_id} would return all
+#'     \code{NA} for seasonally adjusted work. Codes rather than names, because
+#'     BLS renames items and the codes are stable.
+#'   \item Coverage is U.S. city average (\code{area_code == "0000"}) from March
+#'     2012 forward. Outside that window \code{weight} is \code{NA} rather than
+#'     back-filled: an imputed weight that looks like a real one is worse than a
+#'     missing value. See the BLS relative importance archive for a pre-2012
+#'     backfill.
+#'   \item BLS's published "Relative importance, December YYYY" tables are the
+#'     \strong{January YYYY+1} row of this file, not the December YYYY row.
+#'     Verified exactly: the December 2024 table's shelter (35.483), owners'
+#'     equivalent rent (26.282), gasoline (2.902), new vehicles (4.393) and used
+#'     cars (2.391) are the January 2025 weights here, and December 2024 itself
+#'     carries different values. Anyone reconciling against a published December
+#'     table should compare it to January.
+#'   \item Contribution to the change in the all items index between \emph{t-k}
+#'     and \emph{t} uses the weight at \emph{t-k}, which is why the lagged
+#'     columns are supplied. In percentage points,
+#'     \code{weight_lag1 * (value / lag(value) - 1)} for the 1-month effect and
+#'     \code{weight_lag12 * (value / lag(value, 12) - 1)} for the 12-month
+#'     effect. These reproduce BLS's own \code{W1} and \code{WC} aspects, which
+#'     \code{\link{getCPIAspects}} can retrieve as a cross-check.
+#' }
+#'
 #' @examples
 #' \dontrun{
-#'   # Download CPI data
+#'   # Download CPI data with monthly relative importance attached
 #'   cpi_data <- getBLSFiles("cpi", "your.email@example.com")
+#'
+#'   # Skip the weights download
+#'   cpi_fast <- getBLSFiles("cpi", "your.email@example.com", weights = FALSE)
 #'
 #'   # Download JOLTS data
 #'   jolts_data <- getBLSFiles("jolts", "your.email@example.com")
 #' }
 #'
+#' @seealso \code{\link{getCPIAspects}} for the other CPI aspect types: BLS's own
+#'   contribution decomposition, median standard errors, and seasonal factors.
+#'
 #' @importFrom readr read_tsv cols
 #' @importFrom dplyr mutate left_join as_tibble case_when
 #' @importFrom magrittr %>%
 #' @export
-getBLSFiles <- function(data_source, email) {
+getBLSFiles <- function(data_source, email, weights = TRUE) {
   # Validate the data source input
   available_sources <- c(
     "cpi",
@@ -279,6 +329,50 @@ getBLSFiles <- function(data_source, email) {
     by = "series_id",
     relationship = "many-to-one"
   )
+
+  # Attach CPI relative importance from cu.aspect. Keyed on area + item + date
+  # rather than series_id: BLS publishes weights only on the NSA series, but the
+  # weight belongs to the item, so a series_id join would leave every
+  # seasonally adjusted row NA. See the "CPI relative importance" section above.
+  if (isTRUE(weights) && tolower(data_source) == "cpi") {
+    weight_df <- cpi_weights_monthly(email, survey = files[1])
+
+    weight_key <- c("area_code", "item_code", "date")
+    missing_key <- setdiff(weight_key, names(result_df))
+    if (length(missing_key) > 0) {
+      warning(
+        "Cannot attach CPI weights; missing column(s): ",
+        paste(missing_key, collapse = ", "),
+        ". Returning index values without weights."
+      )
+    } else {
+      n_before <- nrow(result_df)
+      # many-to-one: one weight per area/item/month, applied to both the
+      # seasonally adjusted and unadjusted series for that item.
+      result_df <- dplyr::left_join(
+        result_df, weight_df,
+        by = weight_key,
+        relationship = "many-to-one"
+      )
+      if (nrow(result_df) != n_before) {
+        stop(
+          "Internal error: weight join changed row count from ",
+          n_before,
+          " to ",
+          nrow(result_df),
+          ". Please report at https://github.com/mtkonczal/tidyusmacro/issues"
+        )
+      }
+      matched <- sum(!is.na(result_df$weight))
+      message(
+        "Attached relative importance to ",
+        format(matched, big.mark = ","),
+        " of ",
+        format(n_before, big.mark = ","),
+        " rows (U.S. city average, March 2012 forward; NA elsewhere)."
+      )
+    }
+  }
 
   # Invariant: no join above should ever produce dplyr's .x/.y suffixes.
   suffixed <- grep("\\.[xy]$", names(result_df), value = TRUE)
