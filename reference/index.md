@@ -8,6 +8,8 @@ Functions to download data from government sources
   : Download and Merge FRED Series
 - [`getBLSFiles()`](https://www.mikekonczal.com/tidyusmacro/reference/getBLSFiles.md)
   : Download and Process Bureau of Labor Statistics Data
+- [`getCPIAspects()`](https://www.mikekonczal.com/tidyusmacro/reference/getCPIAspects.md)
+  : Download CPI Metadata (Aspect) Files from BLS
 - [`getNIPAFiles()`](https://www.mikekonczal.com/tidyusmacro/reference/getNIPAFiles.md)
   : Download and Process BEA NIPA Files with Fast Row Expansion
 - [`getPCEInflation()`](https://www.mikekonczal.com/tidyusmacro/reference/getPCEInflation.md)
