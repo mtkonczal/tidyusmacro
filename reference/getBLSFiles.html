@@ -103,8 +103,8 @@ identifying API users. Set as the HTTP User-Agent header.</p></dd>
 <dt id="arg-weights">weights<a class="anchor" aria-label="anchor" href="#arg-weights"></a></dt>
 <dd><p>Logical; for <code>data_source = "cpi"</code> only. When <code>TRUE</code>
 (the default), also downloads <code>cu.aspect</code> and attaches monthly relative
-importance. Ignored for every other data source. Set to <code>FALSE</code> to skip
-the extra ~31 MB download.</p></dd>
+importance plus BLS's own published contributions. Ignored for every other
+data source. Set to <code>FALSE</code> to skip the extra ~31 MB download.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -123,18 +123,25 @@ the extra ~31 MB download.</p></dd>
 <dd><p>Additional metadata columns vary by data source (e.g., item codes,
 industry codes, area codes)</p></dd>
 
-</dl><p>For CPI with <code>weights = TRUE</code>, three further columns:</p>
+</dl><p>For CPI with <code>weights = TRUE</code>, four further columns:</p>
 <dl><dt>weight</dt>
-<dd><p>Relative importance in the observation month, in percent of
-all items</p></dd>
+<dd><p>Relative importance, in percent of all items, on the base
+month for the 1-month change ending in this observation month. This is
+the weight for a 1-month contribution; do not lag it. See the dating
+note below.</p></dd>
 
-<dt>weight_lag1</dt>
-<dd><p>Relative importance one month earlier; the correct
-weight for a 1-month contribution</p></dd>
+<dt>weight_12mo</dt>
+<dd><p>Relative importance on the base month for the 12-month
+change ending in this observation month; the weight for a 12-month
+contribution</p></dd>
 
-<dt>weight_lag12</dt>
-<dd><p>Relative importance twelve months earlier; the correct
-weight for a 12-month contribution</p></dd>
+<dt>effect_1m</dt>
+<dd><p>BLS's own published effect on the 1-month all items
+change, in percentage points. Seasonally adjusted rows only.</p></dd>
+
+<dt>effect_12m</dt>
+<dd><p>BLS's own published effect on the 12-month all items
+change, in percentage points. Not seasonally adjusted rows only.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -163,21 +170,39 @@ BLS renames items and the codes are stable.</p></li>
 back-filled: an imputed weight that looks like a real one is worse than a
 missing value. See the BLS relative importance archive for a pre-2012
 backfill.</p></li>
-<li><p>BLS's published "Relative importance, December YYYY" tables are the
-<strong>January YYYY+1</strong> row of this file, not the December YYYY row.
-Verified exactly: the December 2024 table's shelter (35.483), owners'
-equivalent rent (26.282), gasoline (2.902), new vehicles (4.393) and used
-cars (2.391) are the January 2025 weights here, and December 2024 itself
-carries different values. Anyone reconciling against a published December
-table should compare it to January.</p></li>
-<li><p>Contribution to the change in the all items index between <em>t-k</em>
-and <em>t</em> uses the weight at <em>t-k</em>, which is why the lagged
-columns are supplied. In percentage points,
-<code>weight_lag1 * (value / lag(value) - 1)</code> for the 1-month effect and
-<code>weight_lag12 * (value / lag(value, 12) - 1)</code> for the 12-month
-effect. These reproduce BLS's own <code>W1</code> and <code>WC</code> aspects, which
-<code><a href="getCPIAspects.html">getCPIAspects</a></code> can retrieve as a cross-check.</p></li>
+<li><p>A row of <code>cu.aspect</code> stamped month <em>t</em> carries the relative
+importance BLS labels month <em>t-1</em>. This is the one thing about the
+file that reliably produces off-by-one errors, so it is worth stating
+twice: the weight you want for the change <em>ending</em> in month <em>t</em>
+is the row dated <em>t</em>, not a lag of it. Verified against the June 2026
+release, where the "Relative importance May 2026" column of Tables 6 and 7
+matches the 2026-06-01 rows for all 307 items exactly and the 2026-05-01
+rows for only 43. The same shift is why BLS's published "Relative
+importance, December YYYY" table is the <strong>January YYYY+1</strong> row.</p></li>
+<li><p>Accordingly <code>weight</code> is the row dated <em>t</em> and needs no lag,
+and <code>weight_12mo</code> is the row dated <em>t-11</em> – eleven months back,
+because the RI labeled <em>t-12</em> lives in the <em>t-11</em> row.</p></li>
+<li><p>Both weight columns are joined on a month index, never by row
+position. BLS omits rows entirely for intermittently priced items rather
+than writing NA, so a positional lag borrows the wrong month's weight
+without warning.</p></li>
 </ul></div>
+    <div class="section level2">
+    <h2 id="contributions">Contributions<a class="anchor" aria-label="anchor" href="#contributions"></a></h2>
+
+
+<p><code>effect_1m</code> and <code>effect_12m</code> are BLS's own decomposition, and they
+equal the "effect on All Items" columns of news release Tables 6 and 7
+exactly. Use them for anything BLS publishes.</p>
+<p><code>weight</code> and <code>weight_12mo</code> are for aggregations BLS does not
+publish. For a 12-month contribution,
+<code>weight_12mo * (value / lag12(value) - 1)</code> on the NSA series is a good
+approximation. For a 1-month contribution on the <em>seasonally adjusted</em>
+series, note that relative importance is defined on the NSA index and has to
+be rescaled by the item's seasonal factor relative to all items before it will
+reproduce BLS's number; see <code><a href="getCPIAspects.html">getCPIAspects</a></code> for the exact formula.</p>
+<p>In both cases lag by calendar month, not row position.</p>
+    </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="getCPIAspects.html">getCPIAspects</a></code> for the other CPI aspect types: BLS's own

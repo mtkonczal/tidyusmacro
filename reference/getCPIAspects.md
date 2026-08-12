@@ -69,6 +69,20 @@ with every CPI release. It is not described in `cu.txt` (that file was
 last revised in February 2018; the aspect files were added in November
 2024); the documentation is on a separate BLS fact sheet.
 
+## Dating convention
+
+A row stamped month *t* carries the relative importance BLS labels month
+*t-1*. That is the weight base for the *t-1* to *t* change, so the row
+you want for a change ending in month *t* is the row dated *t* – not a
+lag of it.
+
+Verified against the June 2026 news release: the "Relative importance
+May 2026" column in Tables 6 and 7 matches the rows dated 2026-06-01 for
+all 307 items exactly, and matches the rows dated 2026-05-01 for only 43
+of them. The same shift explains why BLS's published "Relative
+importance, December YYYY" table is the **January YYYY+1** row of this
+file.
+
 Aspect types, and the seasonal-adjustment domain each one is published
 on:
 
@@ -97,7 +111,12 @@ on:
 
 - `V1`, `VC`:
 
-  Published 1-month (SA) and 12-month (NSA) percent changes.
+  The percent change *at the reference month named by `H1`/`HC`*, not
+  the current month's change. Read them together with `H1`/`HC`: they
+  are the two right-hand columns of news release Tables 6 and 7
+  ("Largest (L) or Smallest (S) change since: Date / Percent change").
+  The current month's percent change is not in this file; compute it
+  from the index.
 
 - `M1`, `MC`:
 
@@ -118,6 +137,29 @@ so it applies to the SA series too and should be joined on `area_code` +
 `item_code` + `date`. This is what
 [`getBLSFiles`](https://www.mikekonczal.com/tidyusmacro/reference/getBLSFiles.md)`("cpi", ...)`
 does.
+
+## Reproducing the published effect columns
+
+`W1` and `WC` are BLS's own contribution decomposition, and they equal
+the "effect on All Items" columns of Tables 6 and 7 exactly (verified
+for June 2026: 269 of 269 and 306 of 306 items, zero deviation). Prefer
+them to rolling your own.
+
+If you do need to roll your own – for a custom aggregation BLS does not
+publish – the 1-month effect is *not* relative importance times the
+seasonally adjusted percent change. Relative importance is defined on
+the NSA index, so it has to be put on an SA footing first:
+
+\$\$W1\_{i,t} = I\_{i,t} \times \frac{SA\_{i,t-1} /
+NSA\_{i,t-1}}{SA\_{all,t-1} / NSA\_{all,t-1}} \times \frac{SA\_{i,t} /
+SA\_{i,t-1} - 1}{1} \times 100\$\$
+
+That reproduces `W1` exactly (270 of 270 items in June 2026). Dropping
+the seasonal-factor ratio costs 0.018 percentage points on gasoline and
+0.008 on energy – small, but large enough to change a rounded headline
+contribution. There is no equally clean reconstruction of `WC`: chaining
+twelve monthly NSA effects lands within 0.027 percentage points, which
+is why the recommendation is to use BLS's value.
 
 ## See also
 

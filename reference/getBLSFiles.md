@@ -74,9 +74,9 @@ getBLSFiles(data_source, email, weights = TRUE)
 - weights:
 
   Logical; for `data_source = "cpi"` only. When `TRUE` (the default),
-  also downloads `cu.aspect` and attaches monthly relative importance.
-  Ignored for every other data source. Set to `FALSE` to skip the extra
-  ~31 MB download.
+  also downloads `cu.aspect` and attaches monthly relative importance
+  plus BLS's own published contributions. Ignored for every other data
+  source. Set to `FALSE` to skip the extra ~31 MB download.
 
 ## Value
 
@@ -99,21 +99,29 @@ A tibble containing the merged data with columns for:
   Additional metadata columns vary by data source (e.g., item codes,
   industry codes, area codes)
 
-For CPI with `weights = TRUE`, three further columns:
+For CPI with `weights = TRUE`, four further columns:
 
 - weight:
 
-  Relative importance in the observation month, in percent of all items
+  Relative importance, in percent of all items, on the base month for
+  the 1-month change ending in this observation month. This is the
+  weight for a 1-month contribution; do not lag it. See the dating note
+  below.
 
-- weight_lag1:
+- weight_12mo:
 
-  Relative importance one month earlier; the correct weight for a
-  1-month contribution
+  Relative importance on the base month for the 12-month change ending
+  in this observation month; the weight for a 12-month contribution
 
-- weight_lag12:
+- effect_1m:
 
-  Relative importance twelve months earlier; the correct weight for a
-  12-month contribution
+  BLS's own published effect on the 1-month all items change, in
+  percentage points. Seasonally adjusted rows only.
+
+- effect_12m:
+
+  BLS's own published effect on the 12-month all items change, in
+  percentage points. Not seasonally adjusted rows only.
 
 ## Details
 
@@ -142,22 +150,41 @@ worth knowing:
   value. See the BLS relative importance archive for a pre-2012
   backfill.
 
-- BLS's published "Relative importance, December YYYY" tables are the
-  **January YYYY+1** row of this file, not the December YYYY row.
-  Verified exactly: the December 2024 table's shelter (35.483), owners'
-  equivalent rent (26.282), gasoline (2.902), new vehicles (4.393) and
-  used cars (2.391) are the January 2025 weights here, and December 2024
-  itself carries different values. Anyone reconciling against a
-  published December table should compare it to January.
+- A row of `cu.aspect` stamped month *t* carries the relative importance
+  BLS labels month *t-1*. This is the one thing about the file that
+  reliably produces off-by-one errors, so it is worth stating twice: the
+  weight you want for the change *ending* in month *t* is the row dated
+  *t*, not a lag of it. Verified against the June 2026 release, where
+  the "Relative importance May 2026" column of Tables 6 and 7 matches
+  the 2026-06-01 rows for all 307 items exactly and the 2026-05-01 rows
+  for only 43. The same shift is why BLS's published "Relative
+  importance, December YYYY" table is the **January YYYY+1** row.
 
-- Contribution to the change in the all items index between *t-k* and
-  *t* uses the weight at *t-k*, which is why the lagged columns are
-  supplied. In percentage points,
-  `weight_lag1 * (value / lag(value) - 1)` for the 1-month effect and
-  `weight_lag12 * (value / lag(value, 12) - 1)` for the 12-month effect.
-  These reproduce BLS's own `W1` and `WC` aspects, which
-  [`getCPIAspects`](https://www.mikekonczal.com/tidyusmacro/reference/getCPIAspects.md)
-  can retrieve as a cross-check.
+- Accordingly `weight` is the row dated *t* and needs no lag, and
+  `weight_12mo` is the row dated *t-11* – eleven months back, because
+  the RI labeled *t-12* lives in the *t-11* row.
+
+- Both weight columns are joined on a month index, never by row
+  position. BLS omits rows entirely for intermittently priced items
+  rather than writing NA, so a positional lag borrows the wrong month's
+  weight without warning.
+
+## Contributions
+
+`effect_1m` and `effect_12m` are BLS's own decomposition, and they equal
+the "effect on All Items" columns of news release Tables 6 and 7
+exactly. Use them for anything BLS publishes.
+
+`weight` and `weight_12mo` are for aggregations BLS does not publish.
+For a 12-month contribution, `weight_12mo * (value / lag12(value) - 1)`
+on the NSA series is a good approximation. For a 1-month contribution on
+the *seasonally adjusted* series, note that relative importance is
+defined on the NSA index and has to be rescaled by the item's seasonal
+factor relative to all items before it will reproduce BLS's number; see
+[`getCPIAspects`](https://www.mikekonczal.com/tidyusmacro/reference/getCPIAspects.md)
+for the exact formula.
+
+In both cases lag by calendar month, not row position.
 
 ## See also
 
