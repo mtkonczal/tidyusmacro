@@ -31,6 +31,18 @@
 #' last revised in February 2018; the aspect files were added in November 2024);
 #' the documentation is on a separate BLS fact sheet.
 #'
+#' @section Dating convention:
+#' A row stamped month \emph{t} carries the relative importance BLS labels month
+#' \emph{t-1}. That is the weight base for the \emph{t-1} to \emph{t} change, so
+#' the row you want for a change ending in month \emph{t} is the row dated
+#' \emph{t} -- not a lag of it.
+#'
+#' Verified against the June 2026 news release: the "Relative importance May
+#' 2026" column in Tables 6 and 7 matches the rows dated 2026-06-01 for all 307
+#' items exactly, and matches the rows dated 2026-05-01 for only 43 of them.
+#' The same shift explains why BLS's published "Relative importance, December
+#' YYYY" table is the \strong{January YYYY+1} row of this file.
+#'
 #' Aspect types, and the seasonal-adjustment domain each one is published on:
 #' \describe{
 #'   \item{\code{I}}{Relative importance, monthly. NSA series only
@@ -41,8 +53,12 @@
 #'     points. Published on the \emph{seasonally adjusted} series.}
 #'   \item{\code{WC}}{Effect on the 12-month all items change, in percentage
 #'     points. Published on the \emph{not seasonally adjusted} series.}
-#'   \item{\code{V1}, \code{VC}}{Published 1-month (SA) and 12-month (NSA)
-#'     percent changes.}
+#'   \item{\code{V1}, \code{VC}}{The percent change \emph{at the reference month
+#'     named by \code{H1}/\code{HC}}, not the current month's change. Read them
+#'     together with \code{H1}/\code{HC}: they are the two right-hand columns of
+#'     news release Tables 6 and 7 ("Largest (L) or Smallest (S) change since:
+#'     Date / Percent change"). The current month's percent change is not in
+#'     this file; compute it from the index.}
 #'   \item{\code{M1}, \code{MC}}{Median standard error of the 1-month (SA) and
 #'     12-month (NSA) percent change.}
 #'   \item{\code{H1}, \code{HC}}{Text notes flagging largest/smallest change
@@ -57,6 +73,28 @@
 #' but describes the item, so it applies to the SA series too and should be
 #' joined on \code{area_code} + \code{item_code} + \code{date}. This is what
 #' \code{\link{getBLSFiles}("cpi", ...)} does.
+#'
+#' @section Reproducing the published effect columns:
+#' \code{W1} and \code{WC} are BLS's own contribution decomposition, and they
+#' equal the "effect on All Items" columns of Tables 6 and 7 exactly (verified
+#' for June 2026: 269 of 269 and 306 of 306 items, zero deviation). Prefer them
+#' to rolling your own.
+#'
+#' If you do need to roll your own -- for a custom aggregation BLS does not
+#' publish -- the 1-month effect is \emph{not} relative importance times the
+#' seasonally adjusted percent change. Relative importance is defined on the NSA
+#' index, so it has to be put on an SA footing first:
+#'
+#' \deqn{W1_{i,t} = I_{i,t} \times
+#'   \frac{SA_{i,t-1} / NSA_{i,t-1}}{SA_{all,t-1} / NSA_{all,t-1}} \times
+#'   \frac{SA_{i,t} / SA_{i,t-1} - 1}{1} \times 100}
+#'
+#' That reproduces \code{W1} exactly (270 of 270 items in June 2026). Dropping
+#' the seasonal-factor ratio costs 0.018 percentage points on gasoline and
+#' 0.008 on energy -- small, but large enough to change a rounded headline
+#' contribution. There is no equally clean reconstruction of \code{WC}: chaining
+#' twelve monthly NSA effects lands within 0.027 percentage points, which is why
+#' the recommendation is to use BLS's value.
 #'
 #' @seealso \code{\link{getBLSFiles}}, which attaches relative importance to CPI
 #'   index values directly.
@@ -136,34 +174,45 @@ getCPIAspects <- function(email, survey = c("cu", "cw"), aspect_type = NULL) {
 #' Build the monthly CPI relative-importance panel
 #'
 #' Internal. Pulls aspect type "I" and returns one row per area/item/month with
-#' the contemporaneous weight plus the 1- and 12-month lags used for
-#' contribution arithmetic.
-#'
-#' Lags are built by joining on a month index rather than by row position, so a
-#' gap in an item's history yields NA instead of silently borrowing the wrong
-#' month's weight.
+#' the weight bases for a 1-month and a 12-month contribution ending in that
+#' month.
 #'
 #' @param email Email for the BLS user agent.
 #' @param survey "cu" or "cw".
-#' @return A tibble: area_code, item_code, date, weight, weight_lag1, weight_lag12.
+#' @return A tibble: area_code, item_code, date, weight, weight_12mo.
 #' @noRd
 cpi_weights_monthly <- function(email, survey = "cu") {
   asp <- getCPIAspects(email, survey = survey, aspect_type = "I")
-  build_weight_lags(asp)
+  build_weight_bases(asp)
 }
 
-#' Add 1- and 12-month lags to a relative-importance table
+#' Attach the 12-month weight base to a relative-importance table
 #'
 #' Internal, and separated from the download so it can be tested offline.
 #'
+#' A row of \code{cu.aspect} stamped month \emph{t} holds the relative importance
+#' BLS labels month \emph{t-1} -- already the base for the \emph{t-1} to \emph{t}
+#' change. So:
+#'
+#' \itemize{
+#'   \item \code{weight}, the base for the 1-month change ending at \emph{t}, is
+#'     the row dated \emph{t}. No lag. Lagging it by one month, which the natural
+#'     reading of "use the prior month's weight" suggests, weights month
+#'     \emph{t}'s change with the RI for month \emph{t-2}.
+#'   \item \code{weight_12mo}, the base for the 12-month change ending at
+#'     \emph{t}, is the RI labeled \emph{t-12}, which is the row dated
+#'     \emph{t-11}. Eleven months back, not twelve.
+#' }
+#'
+#' The shift is joined on a month index rather than applied by row position, so a
+#' gap in an item's history (October 2025, or any intermittently priced item)
+#' yields NA instead of silently borrowing a neighboring month's weight.
+#'
 #' @param asp Tibble as returned by \code{getCPIAspects(aspect_type = "I")}.
-#' @return A tibble: area_code, item_code, date, weight, weight_lag1, weight_lag12.
+#' @return A tibble: area_code, item_code, date, weight, weight_12mo.
 #' @noRd
 #' @importFrom dplyr left_join as_tibble
-build_weight_lags <- function(asp) {
-  # month_index is a robust lag key: it does not assume the panel is complete
-  # or sorted, so a gap in an item's history produces NA rather than a
-  # neighboring month's weight.
+build_weight_bases <- function(asp) {
   ri <- data.frame(
     area_code = asp$area_code,
     item_code = asp$item_code,
@@ -184,26 +233,18 @@ build_weight_lags <- function(asp) {
     )
   }
 
-  make_lag <- function(k, nm) {
-    out <- ri[, c("area_code", "item_code", "month_index", "weight")]
-    out$month_index <- out$month_index + k
-    names(out)[names(out) == "weight"] <- nm
-    out
-  }
+  # The RI labeled month t-12 sits in the row dated t-11, so shift by 11.
+  base_12mo <- ri[, c("area_code", "item_code", "month_index", "weight")]
+  base_12mo$month_index <- base_12mo$month_index + 11L
+  names(base_12mo)[names(base_12mo) == "weight"] <- "weight_12mo"
 
   out <- dplyr::left_join(
-    ri, make_lag(1L, "weight_lag1"),
-    by = c("area_code", "item_code", "month_index"),
-    relationship = "one-to-one"
-  )
-  out <- dplyr::left_join(
-    out, make_lag(12L, "weight_lag12"),
+    ri, base_12mo,
     by = c("area_code", "item_code", "month_index"),
     relationship = "one-to-one"
   )
 
   dplyr::as_tibble(out[, c(
-    "area_code", "item_code", "date",
-    "weight", "weight_lag1", "weight_lag12"
+    "area_code", "item_code", "date", "weight", "weight_12mo"
   )])
 }

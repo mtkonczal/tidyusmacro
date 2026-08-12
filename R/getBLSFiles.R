@@ -24,8 +24,8 @@
 #'   identifying API users. Set as the HTTP User-Agent header.
 #' @param weights Logical; for \code{data_source = "cpi"} only. When \code{TRUE}
 #'   (the default), also downloads \code{cu.aspect} and attaches monthly relative
-#'   importance. Ignored for every other data source. Set to \code{FALSE} to skip
-#'   the extra ~31 MB download.
+#'   importance plus BLS's own published contributions. Ignored for every other
+#'   data source. Set to \code{FALSE} to skip the extra ~31 MB download.
 #'
 #' @return A tibble containing the merged data with columns for:
 #'   \item{series_id}{Unique identifier for each data series}
@@ -33,13 +33,18 @@
 #'   \item{value}{Numeric data value}
 #'   \item{...}{Additional metadata columns vary by data source (e.g., item codes,
 #'     industry codes, area codes)}
-#'   For CPI with \code{weights = TRUE}, three further columns:
-#'   \item{weight}{Relative importance in the observation month, in percent of
-#'     all items}
-#'   \item{weight_lag1}{Relative importance one month earlier; the correct
-#'     weight for a 1-month contribution}
-#'   \item{weight_lag12}{Relative importance twelve months earlier; the correct
-#'     weight for a 12-month contribution}
+#'   For CPI with \code{weights = TRUE}, four further columns:
+#'   \item{weight}{Relative importance, in percent of all items, on the base
+#'     month for the 1-month change ending in this observation month. This is
+#'     the weight for a 1-month contribution; do not lag it. See the dating
+#'     note below.}
+#'   \item{weight_12mo}{Relative importance on the base month for the 12-month
+#'     change ending in this observation month; the weight for a 12-month
+#'     contribution}
+#'   \item{effect_1m}{BLS's own published effect on the 1-month all items
+#'     change, in percentage points. Seasonally adjusted rows only.}
+#'   \item{effect_12m}{BLS's own published effect on the 12-month all items
+#'     change, in percentage points. Not seasonally adjusted rows only.}
 #'
 #' @details
 #' The function constructs URLs to BLS flat files at
@@ -65,21 +70,38 @@
 #'     back-filled: an imputed weight that looks like a real one is worse than a
 #'     missing value. See the BLS relative importance archive for a pre-2012
 #'     backfill.
-#'   \item BLS's published "Relative importance, December YYYY" tables are the
-#'     \strong{January YYYY+1} row of this file, not the December YYYY row.
-#'     Verified exactly: the December 2024 table's shelter (35.483), owners'
-#'     equivalent rent (26.282), gasoline (2.902), new vehicles (4.393) and used
-#'     cars (2.391) are the January 2025 weights here, and December 2024 itself
-#'     carries different values. Anyone reconciling against a published December
-#'     table should compare it to January.
-#'   \item Contribution to the change in the all items index between \emph{t-k}
-#'     and \emph{t} uses the weight at \emph{t-k}, which is why the lagged
-#'     columns are supplied. In percentage points,
-#'     \code{weight_lag1 * (value / lag(value) - 1)} for the 1-month effect and
-#'     \code{weight_lag12 * (value / lag(value, 12) - 1)} for the 12-month
-#'     effect. These reproduce BLS's own \code{W1} and \code{WC} aspects, which
-#'     \code{\link{getCPIAspects}} can retrieve as a cross-check.
+#'   \item A row of \code{cu.aspect} stamped month \emph{t} carries the relative
+#'     importance BLS labels month \emph{t-1}. This is the one thing about the
+#'     file that reliably produces off-by-one errors, so it is worth stating
+#'     twice: the weight you want for the change \emph{ending} in month \emph{t}
+#'     is the row dated \emph{t}, not a lag of it. Verified against the June 2026
+#'     release, where the "Relative importance May 2026" column of Tables 6 and 7
+#'     matches the 2026-06-01 rows for all 307 items exactly and the 2026-05-01
+#'     rows for only 43. The same shift is why BLS's published "Relative
+#'     importance, December YYYY" table is the \strong{January YYYY+1} row.
+#'   \item Accordingly \code{weight} is the row dated \emph{t} and needs no lag,
+#'     and \code{weight_12mo} is the row dated \emph{t-11} -- eleven months back,
+#'     because the RI labeled \emph{t-12} lives in the \emph{t-11} row.
+#'   \item Both weight columns are joined on a month index, never by row
+#'     position. BLS omits rows entirely for intermittently priced items rather
+#'     than writing NA, so a positional lag borrows the wrong month's weight
+#'     without warning.
 #' }
+#'
+#' @section Contributions:
+#' \code{effect_1m} and \code{effect_12m} are BLS's own decomposition, and they
+#' equal the "effect on All Items" columns of news release Tables 6 and 7
+#' exactly. Use them for anything BLS publishes.
+#'
+#' \code{weight} and \code{weight_12mo} are for aggregations BLS does not
+#' publish. For a 12-month contribution,
+#' \code{weight_12mo * (value / lag12(value) - 1)} on the NSA series is a good
+#' approximation. For a 1-month contribution on the \emph{seasonally adjusted}
+#' series, note that relative importance is defined on the NSA index and has to
+#' be rescaled by the item's seasonal factor relative to all items before it will
+#' reproduce BLS's number; see \code{\link{getCPIAspects}} for the exact formula.
+#'
+#' In both cases lag by calendar month, not row position.
 #'
 #' @examples
 #' \dontrun{
@@ -335,7 +357,20 @@ getBLSFiles <- function(data_source, email, weights = TRUE) {
   # weight belongs to the item, so a series_id join would leave every
   # seasonally adjusted row NA. See the "CPI relative importance" section above.
   if (isTRUE(weights) && tolower(data_source) == "cpi") {
-    weight_df <- cpi_weights_monthly(email, survey = files[1])
+    asp <- getCPIAspects(email, survey = files[1])
+    weight_df <- build_weight_bases(asp[asp$aspect_type == "I", , drop = FALSE])
+
+    # W1 and WC are published on the seasonally adjusted and not seasonally
+    # adjusted series respectively, so they join on the full series_id -- unlike
+    # relative importance, which describes the item and joins on area + item.
+    effect_df <- asp[asp$aspect_type %in% c("W1", "WC"), , drop = FALSE]
+    effect_df <- data.frame(
+      series_id = effect_df$series_id,
+      date = effect_df$date,
+      effect_1m = ifelse(effect_df$aspect_type == "W1", effect_df$value_num, NA_real_),
+      effect_12m = ifelse(effect_df$aspect_type == "WC", effect_df$value_num, NA_real_),
+      stringsAsFactors = FALSE
+    )
 
     weight_key <- c("area_code", "item_code", "date")
     missing_key <- setdiff(weight_key, names(result_df))
@@ -370,6 +405,30 @@ getBLSFiles <- function(data_source, email, weights = TRUE) {
         " of ",
         format(n_before, big.mark = ","),
         " rows (U.S. city average, March 2012 forward; NA elsewhere)."
+      )
+
+      # W1 and WC never share a series_id/date, so one row per key after
+      # collapsing the two aspect types onto a single row each.
+      result_df <- dplyr::left_join(
+        result_df, effect_df,
+        by = c("series_id", "date"),
+        relationship = "many-to-one"
+      )
+      if (nrow(result_df) != n_before) {
+        stop(
+          "Internal error: effect join changed row count from ",
+          n_before,
+          " to ",
+          nrow(result_df),
+          ". Please report at https://github.com/mtkonczal/tidyusmacro/issues"
+        )
+      }
+      message(
+        "Attached BLS published effects to ",
+        format(sum(!is.na(result_df$effect_1m)), big.mark = ","),
+        " (1-month, SA) and ",
+        format(sum(!is.na(result_df$effect_12m)), big.mark = ","),
+        " (12-month, NSA) rows."
       )
     }
   }
