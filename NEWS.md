@@ -1,4 +1,4 @@
-# tidyusmacro (development version)
+# tidyusmacro 0.3.0
 
 ## Breaking changes
 
