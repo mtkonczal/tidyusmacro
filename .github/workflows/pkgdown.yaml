@@ -37,6 +37,17 @@ jobs:
           extra-packages: any::pkgdown, local::.
           needs: website
 
+      # pkgdown renders every *.md in the package root (and in .github/) except
+      # a hardcoded list: README, NEWS, LICENSE, cran-comments and the issue
+      # templates. There is no config to exclude others, so the internal notes
+      # get published to the public site as CLAUDE.html, recommendations.html
+      # and so on. Remove them from the ephemeral checkout before building.
+      # This does not touch the repository.
+      - name: Keep internal notes off the public site
+        run: |
+          rm -f CLAUDE.md CLAUDE_dallas_pce.md recommendations.md BLS_COVERAGE_PLAN.md
+          rm -f .github/*.md
+
       - name: Build site
         run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
         shell: Rscript {0}
@@ -45,6 +56,11 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@v4.5.0
         with:
-          clean: false
+          # clean: true so a file that is no longer generated is removed from
+          # the site. It was false, which is why the internal notes stayed
+          # published. Nothing on gh-pages is hand-maintained: the branch is
+          # entirely pkgdown output, and there is no CNAME here (the custom
+          # domain is configured at the account level).
+          clean: true
           branch: gh-pages
           folder: docs
