@@ -12,11 +12,32 @@ This file contains context and guidance for Claude Code when working on this pro
 ## Key Architecture Decisions
 
 ### getBLSFiles Structure
-- BLS flat files have auxiliary lookup tables with compound keys in some cases:
-  - CEX `characteristics`: join on `(demographics_code, characteristics_code)`
-  - CEX `item`: join on `(subcategory_code, item_code)`
+- Two source families, `blsSources()$join_engine`:
+  - `"legacy"`: the original 12 sources (`cpi`, `eci`, `cex`, `jolts`, `cps`,
+    `ces`, `ces_allemp`, `ces_total`, `averageprice`, `food`, `sae`, `laus`).
+    Lookup joins are hand-mapped per source in `R/getBLSFiles.R`, unchanged
+    since before the 2026-08 registry refactor. Known compound keys:
+    - CEX `characteristics`: join on `(demographics_code, characteristics_code)`
+    - CEX `item`: join on `(subcategory_code, item_code)`
+  - `"derived"`: every source added since (`ppi`, `ppi_industry`,
+    `import_export`, `productivity`, `ecec`, `cpi_w`, `cpi_chained`, plus
+    Tier 2-4 registered but not all live-verified). Lookup joins are derived
+    by column-name intersection in `R/bls-join.R::bls_build_series()` — the
+    key is any `*_code` column shared between a lookup file and `series`,
+    which also auto-detects compound keys (e.g. `wp.item` on
+    `(group_code, item_code)`). New sources normally need only a
+    `bls_registry()` row in `R/bls-registry.R`, not new join code.
 - Metadata columns (`display_level`, `selectable`, `sort_sequence`) are renamed with file prefixes to avoid collisions
 - `display_level` is important for hierarchy filtering (keep it, don't drop)
+- `se`/`su` are deprecated aliases for `sae`/`laus` (warn on use); `su` is a
+  real BLS prefix (Chained CPI), which the old alias was squatting on. See
+  `bls_deprecated_aliases` in `R/bls-registry.R`.
+- Period parsing (`R/bls-period.R::bls_parse_period()`) is shared across all
+  sources. BLS period codes are not all monthly/quarterly: `M13`, `S01`,
+  `S02`, `S03`, and `Q05` are BLS-computed averages, flagged via `is_average`
+  and landing on December of that year (same date as a real Q4/M12 row for
+  the same series — expected, not a join bug). Not dropped by default
+  (`include_averages = TRUE`): CEX publishes nothing but `A01`.
 
 ### Pipe Operators
 - Currently mixed usage of `%>%` (magrittr) and `|>` (base R)
@@ -48,11 +69,13 @@ This file contains context and guidance for Claude Code when working on this pro
   - Higher rate limits with registered key
   - Access to more series metadata
 
-- [ ] **Add more BLS data sources** - Extend `getBLSFiles()`:
-  - PPI (Producer Price Index) - prefix `wp`
-  - Productivity - prefix `pr`
-  - Import/Export prices - prefix `ei`
-  - Check file structure for compound keys before adding
+- [x] **Add more BLS data sources** - Done 2026-08-26: `ppi` (`wp`),
+  `ppi_industry` (`pc`), `import_export` (`ei`), `productivity` (`pr`),
+  `ecec` (`cm`), `cpi_w` (`cw`), `cpi_chained` (`su`). Compound keys are now
+  auto-detected (see getBLSFiles Structure above) rather than needing a
+  manual check per source. Tier 2-4 sources (`oews`, `bed`, `atus`, etc.) are
+  registered in `blsSources()` for discoverability but not all live-verified
+  this round — see `recommendations.md` / `BLS_COVERAGE_PLAN.md`.
 
 ### Low Priority
 

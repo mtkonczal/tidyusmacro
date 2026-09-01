@@ -4,13 +4,25 @@
 \alias{getBLSFiles}
 \title{Download and Process Bureau of Labor Statistics Data}
 \usage{
-getBLSFiles(data_source, email, weights = TRUE)
+getBLSFiles(
+  data_source,
+  email,
+  weights = TRUE,
+  include_averages = TRUE,
+  file = NULL,
+  max_mb = 500
+)
 }
 \arguments{
-\item{data_source}{Character string specifying the BLS data source. Available options:
+\item{data_source}{Character string specifying the BLS data source. Call
+\code{\link{blsSources}()} for the full, current list with sizes and
+descriptions. Commonly used values:
 \describe{
 \item{\code{"cpi"}}{Consumer Price Index - current data}
+\item{\code{"cpi_w"}}{CPI, urban wage earners; basis for the Social Security COLA}
+\item{\code{"cpi_chained"}}{Chained CPI (C-CPI-U); basis for tax bracket indexing}
 \item{\code{"eci"}}{Employment Cost Index (quarterly)}
+\item{\code{"ecec"}}{Employer Costs for Employee Compensation (quarterly)}
 \item{\code{"cex"}}{Consumer Expenditure Survey}
 \item{\code{"jolts"}}{Job Openings and Labor Turnover Survey}
 \item{\code{"cps"}}{Current Population Survey}
@@ -19,9 +31,17 @@ getBLSFiles(data_source, email, weights = TRUE)
 \item{\code{"ces_total"}}{Current Employment Statistics - total nonfarm employment}
 \item{\code{"averageprice"}}{Average price data - current}
 \item{\code{"food"}}{Average price data - food items}
-\item{\code{"se"}}{State and metro area employment}
-\item{\code{"su"}}{State and local area unemployment}
-}}
+\item{\code{"ppi"}}{Producer Price Index, commodity}
+\item{\code{"ppi_industry"}}{Producer Price Index, industry and product}
+\item{\code{"import_export"}}{Import and export price indexes}
+\item{\code{"productivity"}}{Major sector productivity and unit labor costs}
+\item{\code{"laus"}}{Local Area Unemployment Statistics (was \code{"su"})}
+\item{\code{"sae"}}{State and Area Employment, Hours, and Earnings (was \code{"se"})}
+}
+\code{"se"} and \code{"su"} still work but are deprecated: \code{"su"} is
+a real BLS prefix (chained CPI), which the old alias was squatting on, so
+it could not be reused once chained CPI was added. They warn and redirect
+to \code{"sae"}/\code{"laus"}.}
 
 \item{email}{Character string with your email address. Required by BLS for
 identifying API users. Set as the HTTP User-Agent header.}
@@ -30,11 +50,39 @@ identifying API users. Set as the HTTP User-Agent header.}
 (the default), also downloads \code{cu.aspect} and attaches monthly relative
 importance plus BLS's own published contributions. Ignored for every other
 data source. Set to \code{FALSE} to skip the extra ~31 MB download.}
+
+\item{include_averages}{Logical, default \code{TRUE}. BLS period codes
+include not just monthly/quarterly observations but computed averages:
+\code{M13} (annual average), \code{S01}/\code{S02} (half-year average),
+\code{S03} (annual average), and \code{Q05} (annual average). These are
+flagged via the \code{is_average} column rather than dropped, because for
+some sources (CEX publishes only \code{A01}) they are the only rows that
+exist. Set \code{FALSE} to drop them, e.g. before a \code{group_by(date)}
+across many series where an average row would otherwise land on the same
+December date as that year's real December observation.}
+
+\item{file}{Character, optional. Only used for sources added after the
+initial 12 (see \code{blsSources()$join_engine == "derived"}). Picks a
+non-default data file within that survey, e.g.
+\code{file = "data.21.Aggregates"} for PPI's FD-ID aggregates. Call
+\code{\link{blsFiles}(data_source, email)} to see what exists. Ignored
+(with a warning if non-NULL) for the original 12 sources, whose lookup
+joins are tied to their default file.}
+
+\item{max_mb}{Numeric, default 500. For \code{"derived"}-engine sources
+only: refuse to download a data file larger than this without an
+explicit override (e.g. \code{osh_characteristics} is 2.9 GB). Set
+\code{Inf} to disable. Ignored for the original 12 sources.}
 }
 \value{
 A tibble containing the merged data with columns for:
 \item{series_id}{Unique identifier for each data series}
-\item{date}{Observation date}
+\item{date}{Observation date. See the "Period parsing" section below.}
+\item{freq}{One of \code{"monthly"}, \code{"quarterly"},
+\code{"semiannual"}, or \code{"annual"}, from the BLS period code.}
+\item{is_average}{\code{TRUE} for rows BLS computed as an average or
+annual aggregate (period codes \code{M13}, \code{S01}, \code{S02},
+\code{S03}, \code{Q05}) rather than observed in that period.}
 \item{value}{Numeric data value}
 \item{...}{Additional metadata columns vary by data source (e.g., item codes,
 industry codes, area codes)}
@@ -61,9 +109,23 @@ merges them, and returns a tidy tibble ready for analysis.
 The function constructs URLs to BLS flat files at
 \url{https://download.bls.gov/pub/time.series/}, downloads the series
 metadata and auxiliary lookup tables, then downloads and merges the main
-data file. Date parsing handles both monthly (most sources) and quarterly
-(ECI) data frequencies.
+data file.
 }
+\section{Period parsing}{
+
+Prior to this version, \code{date} was computed as
+\code{substr(period, 2, 3)} for every source except ECI. That is correct
+for monthly (\code{M01}-\code{M12}) and, via a special case, for ECI's
+quarterly (\code{Q01}-\code{Q04}) codes, but every source can also carry
+BLS-computed average rows on other period codes, and the old parser
+mis-stamped them: \code{S01}/\code{S02} (half-year averages) became
+January/February, \code{S03} became March, and \code{M13} (annual average)
+became a silent \code{NA}. Verified on \code{cu.data.1.AllItems}
+(2026-08-19): 26\\% of rows were affected. This version uses one parser for
+every period code (see \code{is_average} above) and gives every row a
+correct date.
+}
+
 \section{CPI relative importance}{
 
 Relative importance comes from \code{cu.aspect} (aspect type \code{"I"}),

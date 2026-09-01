@@ -19,6 +19,8 @@ reference:
   contents:
   - getFRED
   - getBLSFiles
+  - blsSources
+  - blsFiles
   - getCPIAspects
   - getNIPAFiles
   - getPCEInflation

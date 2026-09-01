@@ -1,7 +1,63 @@
 # tidyusmacro (development version)
 
+## Breaking changes
+
+* `getBLSFiles("se", ...)` and `getBLSFiles("su", ...)` now warn on every call
+  and redirect to the new canonical names `"sae"` and `"laus"`. The old names
+  still work and return the same data (`se` was never a real BLS prefix;
+  `su`, however, *is* a real prefix -- Chained CPI -- which is why the rename
+  was necessary before that source could be added; see `"cpi_chained"`
+  below). Update scripts to the new names to silence the warning; there is no
+  deadline to do so yet.
+* `getBLSFiles()` gained two new columns for every source, `freq` and
+  `is_average` (see the period-parsing fix below). This is additive and does
+  not change existing columns, but code that assumes a fixed column count or
+  does `names(df)[n]` positionally will see the shift.
+
 ## Bug fixes and improvements
 
+* **Fixed silently wrong dates for BLS period codes other than plain
+  monthly/quarterly.** `getBLSFiles()` computed `date` as
+  `substr(period, 2, 3)` for every source but ECI. That is correct for
+  `M01`-`M12` and, via a special case, ECI's `Q01`-`Q04`, but BLS also
+  publishes computed-average rows on other period codes, and the old parser
+  mis-stamped them: half-year averages (`S01`, `S02`) became January and
+  February, `S03` became March, and the annual average (`M13`) became a
+  silent `NA`. Verified on `cu.data.1.AllItems` (2026-08-19): 26% of rows
+  were affected, and grouping by date across the many series `getBLSFiles()`
+  returns in one table would silently mix half-year averages into January
+  and February. All period codes now go through one shared parser
+  (`freq`/`is_average` columns document the result), and every row gets a
+  correct date. **Row counts and `value` are unchanged for every existing
+  source** -- this was verified by diffing live output before and after
+  for all 12 previously supported sources, including full row-count and
+  value-sum parity. Average rows are not dropped by default (unlike an
+  earlier draft of this fix): CEX publishes nothing but annual (`A01`) rows,
+  so defaulting to drop "averages" would have silently zeroed out that
+  entire source. Pass `include_averages = FALSE` to drop them explicitly.
+* `getBLSFiles()` now supports 7 new sources beyond the original 12: `ppi`,
+  `ppi_industry`, `import_export`, `productivity`, `ecec`, `cpi_w`, and
+  `cpi_chained`. Their lookup-table joins are derived automatically (the key
+  is any `*_code` column shared between a lookup file and `series`, which
+  also auto-detects compound keys BLS uses in some surveys, e.g. `wp.item`
+  is keyed on `(group_code, item_code)`, not `item_code` alone) rather than
+  hand-mapped per source, so future sources are usually a one-line registry
+  addition. See `blsSources()`.
+* New `blsSources()` lists every registered BLS source (68 total: 19 in Tier
+  1, 5 in Tier 2, and 11 in Tier 3 -- all reachable through `getBLSFiles()`
+  today, though only Tier 1 is live-verified so far -- plus 33 discontinued
+  sources registered for discoverability, excluded by default) with size,
+  frequency, and tier.
+  New `blsFiles(source, email)` lists every file BLS publishes within a
+  source's directory, with size and last-modified date, for use with the new
+  `file =` argument.
+* `getBLSFiles()` gained `file =` (pick a non-default data file within a
+  survey; only the 7 new sources above, not the original 12, whose joins are
+  tied to their default file) and `max_mb =` (refuse an unexpectedly large
+  download, e.g. the 2.9 GB `osh_characteristics` case in `blsSources()`,
+  without an explicit override).
+* An unknown `data_source` now suggests near matches (e.g. `"ppi_indsutry"`
+  suggests `ppi_industry`) instead of dumping the full source list.
 * `getFRED()` downloads are now more robust: transient failures are retried
   up to 3 times with backoff, and transport-level errors (FRED's intermittent
   "HTTP/2 stream was not closed cleanly" resets) trigger a fallback request

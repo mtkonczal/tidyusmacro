@@ -132,5 +132,5 @@ test_that("duplicate area/item/month rows are an error, not a silent fan-out", {
 })
 
 test_that("getBLSFiles rejects an unknown source before hitting the network", {
-  expect_error(getBLSFiles("not_a_source", "test@example.com"), "Invalid data source")
+  expect_error(getBLSFiles("not_a_source", "test@example.com"), "Unknown BLS source")
 })
