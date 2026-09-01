@@ -13,20 +13,21 @@ This file contains context and guidance for Claude Code when working on this pro
 
 ### getBLSFiles Structure
 - Two source families, `blsSources()$join_engine`:
-  - `"legacy"`: the original 12 sources (`cpi`, `eci`, `cex`, `jolts`, `cps`,
-    `ces`, `ces_allemp`, `ces_total`, `averageprice`, `food`, `sae`, `laus`).
-    Lookup joins are hand-mapped per source in `R/getBLSFiles.R`, unchanged
-    since before the 2026-08 registry refactor. Known compound keys:
-    - CEX `characteristics`: join on `(demographics_code, characteristics_code)`
-    - CEX `item`: join on `(subcategory_code, item_code)`
-  - `"derived"`: every source added since (`ppi`, `ppi_industry`,
-    `import_export`, `productivity`, `ecec`, `cpi_w`, `cpi_chained`, plus
-    Tier 2-4 registered but not all live-verified). Lookup joins are derived
-    by column-name intersection in `R/bls-join.R::bls_build_series()` — the
-    key is any `*_code` column shared between a lookup file and `series`,
-    which also auto-detects compound keys (e.g. `wp.item` on
-    `(group_code, item_code)`). New sources normally need only a
-    `bls_registry()` row in `R/bls-registry.R`, not new join code.
+  - `"legacy"`: 10 sources (`cpi`, `eci`, `jolts`, `ces`, `ces_allemp`,
+    `ces_total`, `averageprice`, `food`, `sae`, `laus`). Lookup joins are
+    hand-mapped per source in `R/getBLSFiles.R`, unchanged since before the
+    2026-08 registry refactor.
+  - `"derived"`: every source added since, plus `cex` and `cps` (moved off
+    the legacy list 2026-08-31 to fix the lookup gaps in
+    BLS_COVERAGE_PLAN.md section 2.3: CEX was missing `cx.subcategory`, and
+    CPS joined 7 lookups by hand where `ln` publishes far more). Lookup
+    joins are derived by column-name intersection in
+    `R/bls-join.R::bls_build_series()` — the key is any `*_code` column
+    shared between a lookup file and `series`, which also auto-detects
+    compound keys (e.g. `wp.item` on `(group_code, item_code)`, or CEX's
+    `characteristics` on `(demographics_code, characteristics_code)` and
+    `item` on `(subcategory_code, item_code)`). New sources normally need
+    only a `bls_registry()` row in `R/bls-registry.R`, not new join code.
 - Metadata columns (`display_level`, `selectable`, `sort_sequence`) are renamed with file prefixes to avoid collisions
 - `display_level` is important for hierarchy filtering (keep it, don't drop)
 - `se`/`su` are deprecated aliases for `sae`/`laus` (warn on use); `su` is a
@@ -73,9 +74,12 @@ This file contains context and guidance for Claude Code when working on this pro
   `ppi_industry` (`pc`), `import_export` (`ei`), `productivity` (`pr`),
   `ecec` (`cm`), `cpi_w` (`cw`), `cpi_chained` (`su`). Compound keys are now
   auto-detected (see getBLSFiles Structure above) rather than needing a
-  manual check per source. Tier 2-4 sources (`oews`, `bed`, `atus`, etc.) are
-  registered in `blsSources()` for discoverability but not all live-verified
-  this round — see `recommendations.md` / `BLS_COVERAGE_PLAN.md`.
+  manual check per source. Tier 2 and Tier 3 (`oews`, `bed`, `atus`, etc.,
+  16 sources) live-verified 2026-08-31 — all download and join cleanly
+  except `osh_characteristics` (2.9 GB, intentionally gated behind
+  `max_mb`, not pulled routinely). Tier 4 is discontinued surveys,
+  registered for discoverability only — see `recommendations.md` /
+  `BLS_COVERAGE_PLAN.md`.
 
 ### Low Priority
 
@@ -113,14 +117,17 @@ pkgdown::build_site()
 ## Data Source Reference
 
 ### BLS File Mappings
-| Source | Prefix | Data File | Key Auxiliary Files |
-|--------|--------|-----------|---------------------|
-| cpi | cu | data.0.Current | series, item, area |
-| eci | ci | data.1.AllData | series, industry, owner, occupation |
-| jolts | jt | data.1.AllItems | series, industry, state, dataelement, sizeclass |
-| cps | ln | data.1.AllData | series, ages, occupation, race, education |
-| ces | ce | data.0.AllCESSeries | series, datatype, supersector, industry |
-| cex | cx | data.1.AllData | series, category, characteristics, demographics, item |
+Full, current list: `blsSources()`. A few representative examples:
+
+| Source | Prefix | Data File | Join engine | Key Auxiliary Files |
+|--------|--------|-----------|-------------|---------------------|
+| cpi | cu | data.0.Current | legacy | series, item, area |
+| eci | ci | data.1.AllData | legacy | series, industry, owner, occupation |
+| jolts | jt | data.1.AllItems | legacy | series, industry, state, dataelement, sizeclass |
+| ces | ce | data.0.AllCESSeries | legacy | series, datatype, supersector, industry |
+| cps | ln | data.1.AllData | derived | series, plus ~35 auto-joined lookups (was 7, hand-mapped, before 2026-08-31) |
+| cex | cx | data.1.AllData | derived | series, category, characteristics, demographics, item, subcategory |
+| ppi | wp | data.0.Current | derived | series, group, item (compound key), seasonal |
 
 ### BLS Flat File URL Pattern
 ```

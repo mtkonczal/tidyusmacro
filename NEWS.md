@@ -44,10 +44,11 @@
   hand-mapped per source, so future sources are usually a one-line registry
   addition. See `blsSources()`.
 * New `blsSources()` lists every registered BLS source (68 total: 19 in Tier
-  1, 5 in Tier 2, and 11 in Tier 3 -- all reachable through `getBLSFiles()`
-  today, though only Tier 1 is live-verified so far -- plus 33 discontinued
-  sources registered for discoverability, excluded by default) with size,
-  frequency, and tier.
+  1, 5 in Tier 2, and 11 in Tier 3, all live-verified against BLS's flat
+  files as of 2026-08-31 with the exception of `osh_characteristics` (a
+  2.9 GB file, intentionally gated behind `max_mb`, not pulled routinely)
+  -- plus 33 discontinued sources registered for discoverability, excluded
+  by default) with size, frequency, and tier.
   New `blsFiles(source, email)` lists every file BLS publishes within a
   source's directory, with size and last-modified date, for use with the new
   `file =` argument.
@@ -58,6 +59,20 @@
   without an explicit override).
 * An unknown `data_source` now suggests near matches (e.g. `"ppi_indsutry"`
   suggests `ppi_industry`) instead of dumping the full source list.
+* Fixed two lookup-coverage gaps flagged in `BLS_COVERAGE_PLAN.md` section
+  2.3: `getBLSFiles("cex", ...)` was missing the `cx.subcategory` lookup
+  (`subcategory_code` came back unlabeled even though the `item` join
+  already depends on it), and `getBLSFiles("cps", ...)` joined only 7 of
+  the roughly 35 lookups `ln` publishes. Both sources moved from the
+  hand-maintained legacy join list to the derived-key engine (the same one
+  the new sources above use). Verified live: row counts and `value` sums
+  are unchanged for both; CEX gains 4 new `subcategory_*` columns and CPS
+  gains 28 new lookup joins (`absn`, `activity`, `cert`, `chld`, `class`,
+  `disa`, `duration`, `entr`, `expr`, `hheader`, `hour`, `indy`, `jdes`,
+  `look`, `mari`, `mjhs`, `orig`, `pcts`, `periodicity`, `rjnw`, `rnlf`,
+  `rwns`, `seasonal`, `seek`, `tdat`, `tlwk`, `vets`, `wkst`) on top of the
+  7 it already had, matching `ln`'s ~35 lookup files. All additive -- no
+  existing column was renamed or dropped.
 * `getFRED()` downloads are now more robust: transient failures are retried
   up to 3 times with backoff, and transport-level errors (FRED's intermittent
   "HTTP/2 stream was not closed cleanly" resets) trigger a fallback request
