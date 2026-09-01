@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">tidyusmacro</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,15 +42,29 @@
 <h2 id="key-architecture-decisions">Key Architecture Decisions<a class="anchor" aria-label="anchor" href="#key-architecture-decisions"></a></h2>
 <div class="section level3">
 <h3 id="getblsfiles-structure">getBLSFiles Structure<a class="anchor" aria-label="anchor" href="#getblsfiles-structure"></a></h3>
-<ul><li>BLS flat files have auxiliary lookup tables with compound keys in some cases:
-<ul><li>CEX <code>characteristics</code>: join on <code>(demographics_code, characteristics_code)</code>
-</li>
-<li>CEX <code>item</code>: join on <code>(subcategory_code, item_code)</code>
-</li>
-</ul></li>
+<ul><li>
+<strong>One join engine.</strong> <code>bls_build_series()</code> (<code>R/bls-join.R</code>) derives each lookup’s join key by column-name intersection with <code>series</code>: the key is any <code>*_code</code> column shared between a lookup file and <code>series</code>. It auto-detects compound keys (e.g. <code>wp.item</code> on <code>(group_code, item_code)</code>, CEX’s <code>characteristics</code> on <code>(demographics_code, characteristics_code)</code>) and it subsumes the two exceptions the old hand-mapped list carried (<code>ce.datatype</code> keys on <code>data_type_code</code>, <code>la.state_region_division</code> on <code>srd_code</code>) without being told, because it reads column names rather than file stems. Adding a source is a <code>bls_registry()</code> row, not new join code.</li>
+<li>The hand-mapped <code>legacy</code> engine that served the original ten sources was deleted 2026-08-31 after a live before/after diff over all ten confirmed the derived rule reproduces it. That diff lives in <code>verification/</code> (gitignored); <code>verification/capture.R</code> and <code>compare.R</code> re-run it.</li>
+<li>
+<strong>Pinned lookups.</strong> <code>bls_registry()$lookups</code> pins the lookup stems for every tier 1 source, captured live 2026-08-31. When pinned, <code><a href="reference/getBLSFiles.html">getBLSFiles()</a></code> does not need the BLS HTML directory listing to discover lookups, so a change to that page cannot take down a release-day pull; the listing is then used only for the <code>max_mb</code> size guard and its failure downgrades to a warning. Refresh with <code>bls_lookup_candidates(bls_list_files(prefix, email))$stem</code>.</li>
+<li>
+<strong>All-character reads, then selective re-typing.</strong> <code>bls_read()</code> forces <code>col_character</code> so a code like <code>"0000"</code> never becomes <code>0</code>. <code>bls_retype()</code> (<code>R/bls-types.R</code>) then restores integer/logical types to the short list of columns that are genuinely typed: <code>year</code>, <code>*_display_level</code>, <code>*_sort_sequence</code>, <code>*_selectable</code>. This matters most for <code>display_level</code>, which drives hierarchy filtering: as character it compares lexically, so <code>"10" &lt; "2"</code> is TRUE and a filter silently keeps the wrong rows. Coercion is skipped for any column where it would introduce NAs.</li>
+<li>All BLS HTTP goes through <code>bls_get()</code> (<code>R/bls-fetch.R</code>): <code><a href="https://httr.r-lib.org/reference/RETRY.html" class="external-link">httr::RETRY</a></code>, an HTTP/1.1 fallback for transport resets, and a hard status check. BLS returns 403 to any request without a contact email in the User-Agent (verified 2026-08-31), so the UA is passed explicitly rather than through <code>options(HTTPUserAgent=)</code>.</li>
 <li>Metadata columns (<code>display_level</code>, <code>selectable</code>, <code>sort_sequence</code>) are renamed with file prefixes to avoid collisions</li>
 <li>
 <code>display_level</code> is important for hierarchy filtering (keep it, don’t drop)</li>
+<li>
+<code>se</code>/<code>su</code> are deprecated aliases for <code>sae</code>/<code>laus</code> (warn on use); <code>su</code> is a real BLS prefix (Chained CPI), which the old alias was squatting on. See <code>bls_deprecated_aliases</code> in <code>R/bls-registry.R</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="period-parsing">Period parsing<a class="anchor" aria-label="anchor" href="#period-parsing"></a></h3>
+<p><code>R/bls-period.R::bls_parse_period()</code> is shared by <code><a href="reference/getBLSFiles.html">getBLSFiles()</a></code> and <code><a href="reference/getCPIAspects.html">getCPIAspects()</a></code>. BLS period codes are not all monthly/quarterly: <code>M13</code>, <code>S01</code>, <code>S02</code>, <code>S03</code>, and <code>Q05</code> are BLS-computed averages, flagged via <code>is_average</code>.</p>
+<ul><li>
+<strong>Month</strong> is the end of the period (<code>Q01</code> -&gt; March). Averages land in the last month they cover: <code>M13</code>/<code>S03</code>/<code>Q05</code>/<code>A01</code> in December, <code>S01</code> in June.</li>
+<li>
+<strong>Day</strong> separates observed from computed. Observed values are dated the first of the month, matching <code>getFRED</code>/<code>getNIPAFiles</code>. Averages are dated the last day of their terminal month (<code>2024-12-31</code> for <code>M13</code>, <code>2024-06-30</code> for <code>S01</code>). Without this an annual average shares a <code>Date</code> with the real December observation and a stray <code>group_by(date)</code> double-counts silently; there is no month an average can occupy that an observed month does not already own, so the day is the only free dimension.</li>
+<li>Averages still share a date with each other (<code>M13</code>, <code>S02</code>, <code>S03</code> all land on December 31). Deliberate: they are all averages, so <code>is_average</code>/<code>freq</code> separates them. The full key is <code>(series_id, date, freq)</code>.</li>
+<li>Not dropped by default (<code>include_averages = TRUE</code>): CEX publishes nothing but <code>A01</code>. Passing <code>FALSE</code> on such a source now errors rather than returning zero rows.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="pipe-operators">Pipe Operators<a class="anchor" aria-label="anchor" href="#pipe-operators"></a></h3>
@@ -94,16 +108,7 @@
 <li>Higher rate limits with registered key</li>
 <li>Access to more series metadata</li>
 </ul></li>
-<li>
-<label><input type="checkbox"><strong>Add more BLS data sources</strong> - Extend <code><a href="reference/getBLSFiles.html">getBLSFiles()</a></code>:</label>
-<ul><li>PPI (Producer Price Index) - prefix <code>wp</code>
-</li>
-<li>Productivity - prefix <code>pr</code>
-</li>
-<li>Import/Export prices - prefix <code>ei</code>
-</li>
-<li>Check file structure for compound keys before adding</li>
-</ul></li>
+<li><label><input type="checkbox" checked><strong>Add more BLS data sources</strong> - Done 2026-08-26: <code>ppi</code> (<code>wp</code>), <code>ppi_industry</code> (<code>pc</code>), <code>import_export</code> (<code>ei</code>), <code>productivity</code> (<code>pr</code>), <code>ecec</code> (<code>cm</code>), <code>cpi_w</code> (<code>cw</code>), <code>cpi_chained</code> (<code>su</code>). Compound keys are now auto-detected (see getBLSFiles Structure above) rather than needing a manual check per source. Tier 2 and Tier 3 (<code>oews</code>, <code>bed</code>, <code>atus</code>, etc., 16 sources) live-verified 2026-08-31 — all download and join cleanly except <code>osh_characteristics</code> (2.9 GB, intentionally gated behind <code>max_mb</code>, not pulled routinely). Tier 4 is discontinued surveys, registered for discoverability only — see <code>recommendations.md</code> / <code>BLS_COVERAGE_PLAN.md</code>.</label></li>
 </ul></div>
 <div class="section level3">
 <h3 id="low-priority">Low Priority<a class="anchor" aria-label="anchor" href="#low-priority"></a></h3>
@@ -148,6 +153,7 @@
 <h2 id="data-source-reference">Data Source Reference<a class="anchor" aria-label="anchor" href="#data-source-reference"></a></h2>
 <div class="section level3">
 <h3 id="bls-file-mappings">BLS File Mappings<a class="anchor" aria-label="anchor" href="#bls-file-mappings"></a></h3>
+<p>Full, current list: <code><a href="reference/blsSources.html">blsSources()</a></code>. A few representative examples:</p>
 <table class="table"><colgroup><col width="16%"><col width="16%"><col width="22%"><col width="43%"></colgroup><thead><tr><th>Source</th>
 <th>Prefix</th>
 <th>Data File</th>
@@ -155,27 +161,31 @@
 </tr></thead><tbody><tr><td>cpi</td>
 <td>cu</td>
 <td>data.0.Current</td>
-<td>series, item, area</td>
+<td>series, item, area, base, periodicity, seasonal</td>
 </tr><tr><td>eci</td>
 <td>ci</td>
 <td>data.1.AllData</td>
-<td>series, industry, owner, occupation</td>
+<td>series, industry, owner, occupation, subcell, estimate, periodicity, area, seasonal</td>
 </tr><tr><td>jolts</td>
 <td>jt</td>
 <td>data.1.AllItems</td>
-<td>series, industry, state, dataelement, sizeclass</td>
-</tr><tr><td>cps</td>
-<td>ln</td>
-<td>data.1.AllData</td>
-<td>series, ages, occupation, race, education</td>
+<td>series, industry, state, dataelement, sizeclass, area, ratelevel, seasonal</td>
 </tr><tr><td>ces</td>
 <td>ce</td>
 <td>data.0.AllCESSeries</td>
-<td>series, datatype, supersector, industry</td>
+<td>series, datatype, supersector, industry, seasonal</td>
+</tr><tr><td>cps</td>
+<td>ln</td>
+<td>data.1.AllData</td>
+<td>series, plus 35 lookups</td>
 </tr><tr><td>cex</td>
 <td>cx</td>
 <td>data.1.AllData</td>
-<td>series, category, characteristics, demographics, item</td>
+<td>series, category, characteristics, demographics, item, subcategory, process</td>
+</tr><tr><td>ppi</td>
+<td>wp</td>
+<td>data.0.Current</td>
+<td>series, group, item (compound key), seasonal</td>
 </tr></tbody></table></div>
 <div class="section level3">
 <h3 id="bls-flat-file-url-pattern">BLS Flat File URL Pattern<a class="anchor" aria-label="anchor" href="#bls-flat-file-url-pattern"></a></h3>

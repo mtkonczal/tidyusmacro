@@ -1,5 +1,6 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://www.mikekonczal.com/tidyusmacro/404.html</loc></url>
+<url><loc>https://www.mikekonczal.com/tidyusmacro/BLS_COVERAGE_PLAN.html</loc></url>
 <url><loc>https://www.mikekonczal.com/tidyusmacro/CLAUDE.html</loc></url>
 <url><loc>https://www.mikekonczal.com/tidyusmacro/CLAUDE_dallas_pce.html</loc></url>
 <url><loc>https://www.mikekonczal.com/tidyusmacro/LICENSE-text.html</loc></url>
@@ -9,6 +10,9 @@
 <url><loc>https://www.mikekonczal.com/tidyusmacro/authors.html</loc></url>
 <url><loc>https://www.mikekonczal.com/tidyusmacro/index.html</loc></url>
 <url><loc>https://www.mikekonczal.com/tidyusmacro/news/index.html</loc></url>
+<url><loc>https://www.mikekonczal.com/tidyusmacro/recommendations.html</loc></url>
+<url><loc>https://www.mikekonczal.com/tidyusmacro/reference/blsFiles.html</loc></url>
+<url><loc>https://www.mikekonczal.com/tidyusmacro/reference/blsSources.html</loc></url>
 <url><loc>https://www.mikekonczal.com/tidyusmacro/reference/cesDiffusionIndex.html</loc></url>
 <url><loc>https://www.mikekonczal.com/tidyusmacro/reference/dallasTrimPCEcomponents.html</loc></url>
 <url><loc>https://www.mikekonczal.com/tidyusmacro/reference/date_breaks_gg.html</loc></url>

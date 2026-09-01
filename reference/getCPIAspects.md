@@ -42,7 +42,17 @@ A tibble with one row per series/month/aspect_type and columns:
 
 - year, period, date:
 
-  Observation month
+  Observation month. Dates come from the shared parser in
+  `bls_parse_period()`, the same one
+  [`getBLSFiles()`](https://www.mikekonczal.com/tidyusmacro/reference/getBLSFiles.md)
+  uses.
+
+- freq, is_average:
+
+  Frequency implied by the BLS period code, and whether the row is a
+  BLS-computed average. Every aspect type BLS currently publishes is
+  monthly (verified live 2026-08-31), so `is_average` is presently
+  `FALSE` throughout.
 
 - aspect_type:
 

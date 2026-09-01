@@ -17,25 +17,48 @@ follows about 40 minutes later.
 ### BLS flat files
 
 [`getBLSFiles()`](https://www.mikekonczal.com/tidyusmacro/reference/getBLSFiles.md)
-downloads and processes data from Bureau of Labor Statistics flat files.
-Supports CPI, ECI, JOLTS, CPS, CES, and CEX (Consumer Expenditure
-Survey). BLS asks for an email address in the user agent for flat-file
-downloads.
+downloads and processes data from Bureau of Labor Statistics flat files:
+CPI, CPI-W, chained CPI, PPI (commodity and industry), import/export
+prices, ECI, ECEC, productivity, JOLTS, CPS, CES, CEX, average prices,
+state/area employment (SAE), and local area unemployment (LAUS). Call
+[`blsSources()`](https://www.mikekonczal.com/tidyusmacro/reference/blsSources.md)
+for the full, current list with sizes and descriptions. BLS asks for an
+email address in the user agent for flat-file downloads.
 
 ``` r
 
 cpi_data <- getBLSFiles(data_source = "cpi", email = "user@example.com")
 jolts_data <- getBLSFiles(data_source = "jolts", email = "user@example.com")
+
+# Newer sources use the same call; blsFiles() lists what's available within one
+blsFiles("ppi", "user@example.com")
+ppi_data <- getBLSFiles("ppi", "user@example.com")
 ```
 
+Every source carries `freq` (`"monthly"`, `"quarterly"`, `"semiannual"`,
+or `"annual"`) and `is_average` (`TRUE` for BLS-computed rows like the
+`M13` annual average or the `S01` half-year average).
+
+Observed values are dated the first of their month. Computed averages
+are dated the *last* day of the period they cover: `M13` for 2024 is
+`2024-12-31`, `S01` is `2024-06-30`. That keeps an annual average off
+the same date as the real December observation, so grouping by date
+across many series cannot silently double-count. Averages do share a
+date with each other, so use `is_average` or `freq` when you need to
+separate them, and pass `include_averages = FALSE` to drop them
+outright.
+
 CPI arrives with monthly relative importance already attached, from
-BLS’s `cu.aspect` file: `weight` for the observation month, plus
-`weight_lag1` and `weight_lag12`, which are the weights a 1-month and
-12-month contribution calculation actually needs. Coverage is U.S. city
-average from March 2012 forward; weights are `NA` outside that rather
-than back-filled. They are keyed on item code and month, not series ID,
-so seasonally adjusted series carry them too. Pass `weights = FALSE` to
-skip the extra download.
+BLS’s `cu.aspect` file: `weight`, the base for the observation month’s
+1-month change, and `weight_12mo`, the base for its 12-month change –
+the weights a 1-month and 12-month contribution calculation actually
+need, already shifted to the right month (see
+[`?getBLSFiles`](https://www.mikekonczal.com/tidyusmacro/reference/getBLSFiles.md)
+for the dating convention; do not lag either column yourself). Coverage
+is U.S. city average from March 2012 forward; weights are `NA` outside
+that rather than back-filled. They are keyed on item code and month, not
+series ID, so seasonally adjusted series carry them too. Pass
+`weights = FALSE` to skip the extra download.
 
 ``` r
 
@@ -47,7 +70,7 @@ contributions <- cpi_data |>
   filter(area_code == "0000", seasonal == "U", periodicity_code == "R") |>
   arrange(series_id, date) |>
   group_by(series_id) |>
-  mutate(contribution_12m = weight_lag12 * (value / lag(value, 12) - 1)) |>
+  mutate(contribution_12m = weight_12mo * (value / lag(value, 12) - 1)) |>
   ungroup()
 ```
 

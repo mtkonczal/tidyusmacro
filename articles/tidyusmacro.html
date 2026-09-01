@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyusmacro</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -79,20 +79,43 @@ follows about 40 minutes later.</p>
 <h3 id="bls-flat-files">BLS flat files<a class="anchor" aria-label="anchor" href="#bls-flat-files"></a>
 </h3>
 <p><code><a href="../reference/getBLSFiles.html">getBLSFiles()</a></code> downloads and processes data from Bureau
-of Labor Statistics flat files. Supports CPI, ECI, JOLTS, CPS, CES, and
-CEX (Consumer Expenditure Survey). BLS asks for an email address in the
-user agent for flat-file downloads.</p>
+of Labor Statistics flat files: CPI, CPI-W, chained CPI, PPI (commodity
+and industry), import/export prices, ECI, ECEC, productivity, JOLTS,
+CPS, CES, CEX, average prices, state/area employment (SAE), and local
+area unemployment (LAUS). Call <code><a href="../reference/blsSources.html">blsSources()</a></code> for the full,
+current list with sizes and descriptions. BLS asks for an email address
+in the user agent for flat-file downloads.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cpi_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getBLSFiles.html">getBLSFiles</a></span><span class="op">(</span>data_source <span class="op">=</span> <span class="st">"cpi"</span>, email <span class="op">=</span> <span class="st">"user@example.com"</span><span class="op">)</span></span>
-<span><span class="va">jolts_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getBLSFiles.html">getBLSFiles</a></span><span class="op">(</span>data_source <span class="op">=</span> <span class="st">"jolts"</span>, email <span class="op">=</span> <span class="st">"user@example.com"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">jolts_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getBLSFiles.html">getBLSFiles</a></span><span class="op">(</span>data_source <span class="op">=</span> <span class="st">"jolts"</span>, email <span class="op">=</span> <span class="st">"user@example.com"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Newer sources use the same call; blsFiles() lists what's available within one</span></span>
+<span><span class="fu"><a href="../reference/blsFiles.html">blsFiles</a></span><span class="op">(</span><span class="st">"ppi"</span>, <span class="st">"user@example.com"</span><span class="op">)</span></span>
+<span><span class="va">ppi_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getBLSFiles.html">getBLSFiles</a></span><span class="op">(</span><span class="st">"ppi"</span>, <span class="st">"user@example.com"</span><span class="op">)</span></span></code></pre></div>
+<p>Every source carries <code>freq</code> (<code>"monthly"</code>,
+<code>"quarterly"</code>, <code>"semiannual"</code>, or
+<code>"annual"</code>) and <code>is_average</code> (<code>TRUE</code>
+for BLS-computed rows like the <code>M13</code> annual average or the
+<code>S01</code> half-year average).</p>
+<p>Observed values are dated the first of their month. Computed averages
+are dated the <em>last</em> day of the period they cover:
+<code>M13</code> for 2024 is <code>2024-12-31</code>, <code>S01</code>
+is <code>2024-06-30</code>. That keeps an annual average off the same
+date as the real December observation, so grouping by date across many
+series cannot silently double-count. Averages do share a date with each
+other, so use <code>is_average</code> or <code>freq</code> when you need
+to separate them, and pass <code>include_averages = FALSE</code> to drop
+them outright.</p>
 <p>CPI arrives with monthly relative importance already attached, from
-BLS’s <code>cu.aspect</code> file: <code>weight</code> for the
-observation month, plus <code>weight_lag1</code> and
-<code>weight_lag12</code>, which are the weights a 1-month and 12-month
-contribution calculation actually needs. Coverage is U.S. city average
-from March 2012 forward; weights are <code>NA</code> outside that rather
-than back-filled. They are keyed on item code and month, not series ID,
-so seasonally adjusted series carry them too. Pass
+BLS’s <code>cu.aspect</code> file: <code>weight</code>, the base for the
+observation month’s 1-month change, and <code>weight_12mo</code>, the
+base for its 12-month change – the weights a 1-month and 12-month
+contribution calculation actually need, already shifted to the right
+month (see <code><a href="../reference/getBLSFiles.html">?getBLSFiles</a></code> for the dating convention; do not
+lag either column yourself). Coverage is U.S. city average from March
+2012 forward; weights are <code>NA</code> outside that rather than
+back-filled. They are keyed on item code and month, not series ID, so
+seasonally adjusted series carry them too. Pass
 <code>weights = FALSE</code> to skip the extra download.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
@@ -103,7 +126,7 @@ so seasonally adjusted series carry them too. Pass
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">area_code</span> <span class="op">==</span> <span class="st">"0000"</span>, <span class="va">seasonal</span> <span class="op">==</span> <span class="st">"U"</span>, <span class="va">periodicity_code</span> <span class="op">==</span> <span class="st">"R"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">series_id</span>, <span class="va">date</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">series_id</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>contribution_12m <span class="op">=</span> <span class="va">weight_lag12</span> <span class="op">*</span> <span class="op">(</span><span class="va">value</span> <span class="op">/</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/lead-lag.html" class="external-link">lag</a></span><span class="op">(</span><span class="va">value</span>, <span class="fl">12</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>contribution_12m <span class="op">=</span> <span class="va">weight_12mo</span> <span class="op">*</span> <span class="op">(</span><span class="va">value</span> <span class="op">/</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/lead-lag.html" class="external-link">lag</a></span><span class="op">(</span><span class="va">value</span>, <span class="fl">12</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">ungroup</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/getCPIAspects.html">getCPIAspects()</a></code> returns the rest of the metadata in that
 file: BLS’s own contribution decomposition (<code>W1</code>,

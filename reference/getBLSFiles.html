@@ -13,7 +13,7 @@ merges them, and returns a tidy tibble ready for analysis."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">tidyusmacro</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,7 +47,14 @@ merges them, and returns a tidy tibble ready for analysis.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">getBLSFiles</span><span class="op">(</span><span class="va">data_source</span>, <span class="va">email</span>, weights <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">getBLSFiles</span><span class="op">(</span></span>
+<span>  <span class="va">data_source</span>,</span>
+<span>  <span class="va">email</span>,</span>
+<span>  weights <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  include_averages <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  max_mb <span class="op">=</span> <span class="fl">500</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -55,11 +62,22 @@ merges them, and returns a tidy tibble ready for analysis.</p>
 
 
 <dl><dt id="arg-data-source">data_source<a class="anchor" aria-label="anchor" href="#arg-data-source"></a></dt>
-<dd><p>Character string specifying the BLS data source. Available options:</p><dl><dt><code>"cpi"</code></dt>
+<dd><p>Character string specifying the BLS data source. Call
+<code><a href="blsSources.html">blsSources()</a></code> for the full, current list with sizes and
+descriptions. Commonly used values:</p><dl><dt><code>"cpi"</code></dt>
 <dd><p>Consumer Price Index - current data</p></dd>
+
+<dt><code>"cpi_w"</code></dt>
+<dd><p>CPI, urban wage earners; basis for the Social Security COLA</p></dd>
+
+<dt><code>"cpi_chained"</code></dt>
+<dd><p>Chained CPI (C-CPI-U); basis for tax bracket indexing</p></dd>
 
 <dt><code>"eci"</code></dt>
 <dd><p>Employment Cost Index (quarterly)</p></dd>
+
+<dt><code>"ecec"</code></dt>
+<dd><p>Employer Costs for Employee Compensation (quarterly)</p></dd>
 
 <dt><code>"cex"</code></dt>
 <dd><p>Consumer Expenditure Survey</p></dd>
@@ -85,14 +103,29 @@ merges them, and returns a tidy tibble ready for analysis.</p>
 <dt><code>"food"</code></dt>
 <dd><p>Average price data - food items</p></dd>
 
-<dt><code>"se"</code></dt>
-<dd><p>State and metro area employment</p></dd>
+<dt><code>"ppi"</code></dt>
+<dd><p>Producer Price Index, commodity</p></dd>
 
-<dt><code>"su"</code></dt>
-<dd><p>State and local area unemployment</p></dd>
+<dt><code>"ppi_industry"</code></dt>
+<dd><p>Producer Price Index, industry and product</p></dd>
+
+<dt><code>"import_export"</code></dt>
+<dd><p>Import and export price indexes</p></dd>
+
+<dt><code>"productivity"</code></dt>
+<dd><p>Major sector productivity and unit labor costs</p></dd>
+
+<dt><code>"laus"</code></dt>
+<dd><p>Local Area Unemployment Statistics (was <code>"su"</code>)</p></dd>
+
+<dt><code>"sae"</code></dt>
+<dd><p>State and Area Employment, Hours, and Earnings (was <code>"se"</code>)</p></dd>
 
 
-</dl></dd>
+</dl><p><code>"se"</code> and <code>"su"</code> still work but are deprecated: <code>"su"</code> is
+a real BLS prefix (chained CPI), which the old alias was squatting on, so
+it could not be reused once chained CPI was added. They warn and redirect
+to <code>"sae"</code>/<code>"laus"</code>.</p></dd>
 
 
 <dt id="arg-email">email<a class="anchor" aria-label="anchor" href="#arg-email"></a></dt>
@@ -106,6 +139,32 @@ identifying API users. Set as the HTTP User-Agent header.</p></dd>
 importance plus BLS's own published contributions. Ignored for every other
 data source. Set to <code>FALSE</code> to skip the extra ~31 MB download.</p></dd>
 
+
+<dt id="arg-include-averages">include_averages<a class="anchor" aria-label="anchor" href="#arg-include-averages"></a></dt>
+<dd><p>Logical, default <code>TRUE</code>. BLS period codes
+include not just monthly/quarterly observations but computed averages:
+<code>M13</code> (annual average), <code>S01</code>/<code>S02</code> (half-year average),
+<code>S03</code> (annual average), and <code>Q05</code> (annual average). These are
+flagged via the <code>is_average</code> column rather than dropped, because for
+some sources (CEX publishes only <code>A01</code>) they are the only rows that
+exist. Set <code>FALSE</code> to drop them, e.g. before a <code>group_by(date)</code>
+across many series where an average row would otherwise land on the same
+December date as that year's real December observation.</p></dd>
+
+
+<dt id="arg-file">file<a class="anchor" aria-label="anchor" href="#arg-file"></a></dt>
+<dd><p>Character, optional. Picks a non-default data file within the
+survey, e.g. <code>file = "data.21.Aggregates"</code> for PPI's FD-ID
+aggregates. Call <code><a href="blsFiles.html">blsFiles</a>(data_source, email)</code> to see what
+exists. Required for the discontinued (tier 4) surveys, which have no
+default file.</p></dd>
+
+
+<dt id="arg-max-mb">max_mb<a class="anchor" aria-label="anchor" href="#arg-max-mb"></a></dt>
+<dd><p>Numeric, default 500. Refuse to download a data file larger
+than this without an explicit override (e.g. <code>osh_characteristics</code>
+is 2.9 GB). Set <code>Inf</code> to disable.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -114,7 +173,16 @@ data source. Set to <code>FALSE</code> to skip the extra ~31 MB download.</p></d
 <dd><p>Unique identifier for each data series</p></dd>
 
 <dt>date</dt>
-<dd><p>Observation date</p></dd>
+<dd><p>Observation date. See the "Period parsing" section below.</p></dd>
+
+<dt>freq</dt>
+<dd><p>One of <code>"monthly"</code>, <code>"quarterly"</code>,
+<code>"semiannual"</code>, or <code>"annual"</code>, from the BLS period code.</p></dd>
+
+<dt>is_average</dt>
+<dd><p><code>TRUE</code> for rows BLS computed as an average or
+annual aggregate (period codes <code>M13</code>, <code>S01</code>, <code>S02</code>,
+<code>S03</code>, <code>Q05</code>) rather than observed in that period.</p></dd>
 
 <dt>value</dt>
 <dd><p>Numeric data value</p></dd>
@@ -149,8 +217,43 @@ change, in percentage points. Not seasonally adjusted rows only.</p></dd>
     <p>The function constructs URLs to BLS flat files at
 <a href="https://download.bls.gov/pub/time.series/" class="external-link">https://download.bls.gov/pub/time.series/</a>, downloads the series
 metadata and auxiliary lookup tables, then downloads and merges the main
-data file. Date parsing handles both monthly (most sources) and quarterly
-(ECI) data frequencies.</p>
+data file.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="period-parsing">Period parsing<a class="anchor" aria-label="anchor" href="#period-parsing"></a></h2>
+
+
+<p>Prior to this version, <code>date</code> was computed as
+<code>substr(period, 2, 3)</code> for every source except ECI. That is correct
+for monthly (<code>M01</code>-<code>M12</code>) and, via a special case, for ECI's
+quarterly (<code>Q01</code>-<code>Q04</code>) codes, but every source can also carry
+BLS-computed average rows on other period codes, and the old parser
+mis-stamped them: <code>S01</code>/<code>S02</code> (half-year averages) became
+January/February, <code>S03</code> became March, and <code>M13</code> (annual average)
+became a silent <code>NA</code>. Verified on <code>cu.data.1.AllItems</code>
+(2026-08-19): 26\<!-- % of rows were affected. This version uses one parser for -->
+every period code (see <code>is_average</code> above) and gives every row a
+correct date.</p>
+<p>The month is the <em>end</em> of the period, matching the pre-existing ECI
+convention (<code>Q01</code> is March). Annual and half-year rows land in the last
+month they cover: <code>M13</code>/<code>S03</code>/<code>Q05</code>/<code>A01</code> in December,
+<code>S01</code> in June.</p>
+<p>The <em>day</em> separates observed values from computed averages. An observed
+value is dated the <strong>first</strong> of its month, matching every other date
+this package returns (<code><a href="getFRED.html">getFRED</a></code>, <code><a href="getNIPAFiles.html">getNIPAFiles</a></code>). A
+computed average is dated the <strong>last day</strong> of its terminal month:
+<code>2024-12-31</code> for <code>M13</code>, <code>2024-06-30</code> for <code>S01</code>.</p>
+<p>That rule exists because the month alone cannot separate them. There is no
+month an annual average can occupy that some observed month does not already
+own, so under a uniform first-of-month rule the 2024 annual average and the
+real December 2024 observation are the same <code>Date</code>, and a
+<code>group_by(date)</code> across many series double-counts silently. With the day
+rule that is impossible rather than merely documented.</p>
+<p>Averages still share a date with each <em>other</em>: <code>M13</code>, <code>S02</code>
+and <code>S03</code> all land on December 31. They are all averages, so
+<code>is_average</code> or <code>freq</code> separates them and no observed value is ever
+contaminated. The full key is <code>(series_id, date, freq)</code>, not
+<code>date</code> alone.</p>
     </div>
     <div class="section level2">
     <h2 id="cpi-relative-importance">CPI relative importance<a class="anchor" aria-label="anchor" href="#cpi-relative-importance"></a></h2>

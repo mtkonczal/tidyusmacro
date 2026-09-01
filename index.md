@@ -41,6 +41,10 @@ library(tidyusmacro)
 # The full CPI flat file, tidied, with lookup tables joined
 cpi <- getBLSFiles(data_source = "cpi", email = "user@example.com")
 
+# See what else is available -- 19 BLS sources and counting
+blsSources(tier = 1)
+ppi <- getBLSFiles("ppi", email = "user@example.com")
+
 # FRED series with friendly column names
 fred_data <- getFRED(prime_epop = "LNS12300060", cpi = "CPIAUCSL")
 ```

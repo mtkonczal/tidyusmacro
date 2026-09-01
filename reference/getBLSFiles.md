@@ -9,22 +9,44 @@ for analysis.
 ## Usage
 
 ``` r
-getBLSFiles(data_source, email, weights = TRUE)
+getBLSFiles(
+  data_source,
+  email,
+  weights = TRUE,
+  include_averages = TRUE,
+  file = NULL,
+  max_mb = 500
+)
 ```
 
 ## Arguments
 
 - data_source:
 
-  Character string specifying the BLS data source. Available options:
+  Character string specifying the BLS data source. Call
+  [`blsSources()`](https://www.mikekonczal.com/tidyusmacro/reference/blsSources.md)
+  for the full, current list with sizes and descriptions. Commonly used
+  values:
 
   `"cpi"`
 
   :   Consumer Price Index - current data
 
+  `"cpi_w"`
+
+  :   CPI, urban wage earners; basis for the Social Security COLA
+
+  `"cpi_chained"`
+
+  :   Chained CPI (C-CPI-U); basis for tax bracket indexing
+
   `"eci"`
 
   :   Employment Cost Index (quarterly)
+
+  `"ecec"`
+
+  :   Employer Costs for Employee Compensation (quarterly)
 
   `"cex"`
 
@@ -58,13 +80,34 @@ getBLSFiles(data_source, email, weights = TRUE)
 
   :   Average price data - food items
 
-  `"se"`
+  `"ppi"`
 
-  :   State and metro area employment
+  :   Producer Price Index, commodity
 
-  `"su"`
+  `"ppi_industry"`
 
-  :   State and local area unemployment
+  :   Producer Price Index, industry and product
+
+  `"import_export"`
+
+  :   Import and export price indexes
+
+  `"productivity"`
+
+  :   Major sector productivity and unit labor costs
+
+  `"laus"`
+
+  :   Local Area Unemployment Statistics (was `"su"`)
+
+  `"sae"`
+
+  :   State and Area Employment, Hours, and Earnings (was `"se"`)
+
+  `"se"` and `"su"` still work but are deprecated: `"su"` is a real BLS
+  prefix (chained CPI), which the old alias was squatting on, so it
+  could not be reused once chained CPI was added. They warn and redirect
+  to `"sae"`/`"laus"`.
 
 - email:
 
@@ -78,6 +121,32 @@ getBLSFiles(data_source, email, weights = TRUE)
   plus BLS's own published contributions. Ignored for every other data
   source. Set to `FALSE` to skip the extra ~31 MB download.
 
+- include_averages:
+
+  Logical, default `TRUE`. BLS period codes include not just
+  monthly/quarterly observations but computed averages: `M13` (annual
+  average), `S01`/`S02` (half-year average), `S03` (annual average), and
+  `Q05` (annual average). These are flagged via the `is_average` column
+  rather than dropped, because for some sources (CEX publishes only
+  `A01`) they are the only rows that exist. Set `FALSE` to drop them,
+  e.g. before a `group_by(date)` across many series where an average row
+  would otherwise land on the same December date as that year's real
+  December observation.
+
+- file:
+
+  Character, optional. Picks a non-default data file within the survey,
+  e.g. `file = "data.21.Aggregates"` for PPI's FD-ID aggregates. Call
+  [`blsFiles`](https://www.mikekonczal.com/tidyusmacro/reference/blsFiles.md)`(data_source, email)`
+  to see what exists. Required for the discontinued (tier 4) surveys,
+  which have no default file.
+
+- max_mb:
+
+  Numeric, default 500. Refuse to download a data file larger than this
+  without an explicit override (e.g. `osh_characteristics` is 2.9 GB).
+  Set `Inf` to disable.
+
 ## Value
 
 A tibble containing the merged data with columns for:
@@ -88,7 +157,18 @@ A tibble containing the merged data with columns for:
 
 - date:
 
-  Observation date
+  Observation date. See the "Period parsing" section below.
+
+- freq:
+
+  One of `"monthly"`, `"quarterly"`, `"semiannual"`, or `"annual"`, from
+  the BLS period code.
+
+- is_average:
+
+  `TRUE` for rows BLS computed as an average or annual aggregate (period
+  codes `M13`, `S01`, `S02`, `S03`, `Q05`) rather than observed in that
+  period.
 
 - value:
 
@@ -128,8 +208,43 @@ For CPI with `weights = TRUE`, four further columns:
 The function constructs URLs to BLS flat files at
 <https://download.bls.gov/pub/time.series/>, downloads the series
 metadata and auxiliary lookup tables, then downloads and merges the main
-data file. Date parsing handles both monthly (most sources) and
-quarterly (ECI) data frequencies.
+data file.
+
+## Period parsing
+
+Prior to this version, `date` was computed as `substr(period, 2, 3)` for
+every source except ECI. That is correct for monthly (`M01`-`M12`) and,
+via a special case, for ECI's quarterly (`Q01`-`Q04`) codes, but every
+source can also carry BLS-computed average rows on other period codes,
+and the old parser mis-stamped them: `S01`/`S02` (half-year averages)
+became January/February, `S03` became March, and `M13` (annual average)
+became a silent `NA`. Verified on `cu.data.1.AllItems` (2026-08-19):
+26\\ every period code (see `is_average` above) and gives every row a
+correct date.
+
+The month is the *end* of the period, matching the pre-existing ECI
+convention (`Q01` is March). Annual and half-year rows land in the last
+month they cover: `M13`/`S03`/`Q05`/`A01` in December, `S01` in June.
+
+The *day* separates observed values from computed averages. An observed
+value is dated the **first** of its month, matching every other date
+this package returns
+([`getFRED`](https://www.mikekonczal.com/tidyusmacro/reference/getFRED.md),
+[`getNIPAFiles`](https://www.mikekonczal.com/tidyusmacro/reference/getNIPAFiles.md)).
+A computed average is dated the **last day** of its terminal month:
+`2024-12-31` for `M13`, `2024-06-30` for `S01`.
+
+That rule exists because the month alone cannot separate them. There is
+no month an annual average can occupy that some observed month does not
+already own, so under a uniform first-of-month rule the 2024 annual
+average and the real December 2024 observation are the same `Date`, and
+a `group_by(date)` across many series double-counts silently. With the
+day rule that is impossible rather than merely documented.
+
+Averages still share a date with each *other*: `M13`, `S02` and `S03`
+all land on December 31. They are all averages, so `is_average` or
+`freq` separates them and no observed value is ever contaminated. The
+full key is `(series_id, date, freq)`, not `date` alone.
 
 ## CPI relative importance
 

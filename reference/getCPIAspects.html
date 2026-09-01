@@ -13,7 +13,7 @@ errors, seasonal factors, and published percent changes."><meta property="og:ima
 
     <a class="navbar-brand me-2" href="../index.html">tidyusmacro</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -81,7 +81,15 @@ every aspect type.</p></dd>
 out of <code>series_id</code></p></dd>
 
 <dt>year, period, date</dt>
-<dd><p>Observation month</p></dd>
+<dd><p>Observation month. Dates come from the shared
+parser in <code>bls_parse_period()</code>, the same one <code><a href="getBLSFiles.html">getBLSFiles()</a></code>
+uses.</p></dd>
+
+<dt>freq, is_average</dt>
+<dd><p>Frequency implied by the BLS period code, and
+whether the row is a BLS-computed average. Every aspect type BLS
+currently publishes is monthly (verified live 2026-08-31), so
+<code>is_average</code> is presently <code>FALSE</code> throughout.</p></dd>
 
 <dt>aspect_type</dt>
 <dd><p>Aspect code (see Details)</p></dd>

@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="index.html">tidyusmacro</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -79,6 +79,10 @@
 <span></span>
 <span><span class="co"># The full CPI flat file, tidied, with lookup tables joined</span></span>
 <span><span class="va">cpi</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getBLSFiles.html">getBLSFiles</a></span><span class="op">(</span>data_source <span class="op">=</span> <span class="st">"cpi"</span>, email <span class="op">=</span> <span class="st">"user@example.com"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># See what else is available -- 19 BLS sources and counting</span></span>
+<span><span class="fu"><a href="reference/blsSources.html">blsSources</a></span><span class="op">(</span>tier <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">ppi</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getBLSFiles.html">getBLSFiles</a></span><span class="op">(</span><span class="st">"ppi"</span>, email <span class="op">=</span> <span class="st">"user@example.com"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># FRED series with friendly column names</span></span>
 <span><span class="va">fred_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/getFRED.html">getFRED</a></span><span class="op">(</span>prime_epop <span class="op">=</span> <span class="st">"LNS12300060"</span>, cpi <span class="op">=</span> <span class="st">"CPIAUCSL"</span><span class="op">)</span></span></code></pre></div>
