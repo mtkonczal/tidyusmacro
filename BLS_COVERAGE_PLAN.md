@@ -87,6 +87,11 @@ but it will bite anyone with `"su"` in a script.
 
 ### 2.3 Two sources join fewer lookups than BLS provides
 
+**Resolved 2026-08-31.** `cex` and `cps` were moved from the legacy
+hand-mapped join list to the derived-key engine (section 3.1). Verified live:
+row counts and `value` sums unchanged for both; CEX gained the `subcategory`
+join below, CPS went from 7 lookups to 35. See `NEWS.md`.
+
 * **CEX (`cx`)**: `cx.subcategory` is not in the mapping, so
   `subcategory_code` comes back as a bare code with no label, even though the
   `item` join already depends on it.

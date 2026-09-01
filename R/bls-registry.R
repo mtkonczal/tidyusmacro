@@ -37,9 +37,9 @@ bls_registry <- function() {
     # other than the period fix and (sae/laus) the name. ---------------------
     r("cpi", "cu", "data.0.Current", "Consumer Price Index, all urban consumers (CPI-U)", "monthly", 1, 48.9, "legacy"),
     r("eci", "ci", "data.1.AllData", "Employment Cost Index", "quarterly", 1, 8.6, "legacy"),
-    r("cex", "cx", "data.1.AllData", "Consumer Expenditure Survey", "annual", 1, 120.8, "legacy"),
+    r("cex", "cx", "data.1.AllData", "Consumer Expenditure Survey", "annual", 1, 120.8, "derived", notes = "Moved off the legacy join list 2026-08-31 to pick up cx.subcategory, previously missing (see BLS_COVERAGE_PLAN.md section 2.3)."),
     r("jolts", "jt", "data.1.AllItems", "Job Openings and Labor Turnover Survey", "monthly", 1, 34.4, "legacy"),
-    r("cps", "ln", "data.1.AllData", "Current Population Survey, labor force statistics", "monthly", 1, 389.7, "legacy"),
+    r("cps", "ln", "data.1.AllData", "Current Population Survey, labor force statistics", "monthly", 1, 389.7, "derived", notes = "Moved off the legacy join list 2026-08-31: the old hardcoded list joined 7 lookups, ln publishes far more (see BLS_COVERAGE_PLAN.md section 2.3)."),
     r("ces", "ce", "data.0.AllCESSeries", "Current Employment Statistics, national", "monthly", 1, 350.2, "legacy"),
     r("ces_allemp", "ce", "data.01a.CurrentSeasAE", "CES all employees, seasonally adjusted", "monthly", 1, 6.0, "legacy"),
     r("ces_total", "ce", "data.00a.TotalNonfarm.Employment", "CES total nonfarm employment", "monthly", 1, 0.5, "legacy"),

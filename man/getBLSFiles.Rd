@@ -61,18 +61,21 @@ exist. Set \code{FALSE} to drop them, e.g. before a \code{group_by(date)}
 across many series where an average row would otherwise land on the same
 December date as that year's real December observation.}
 
-\item{file}{Character, optional. Only used for sources added after the
-initial 12 (see \code{blsSources()$join_engine == "derived"}). Picks a
-non-default data file within that survey, e.g.
-\code{file = "data.21.Aggregates"} for PPI's FD-ID aggregates. Call
-\code{\link{blsFiles}(data_source, email)} to see what exists. Ignored
-(with a warning if non-NULL) for the original 12 sources, whose lookup
-joins are tied to their default file.}
+\item{file}{Character, optional. Only used for \code{"derived"}-engine
+sources (see \code{blsSources()$join_engine}); picks a non-default data
+file within that survey, e.g. \code{file = "data.21.Aggregates"} for
+PPI's FD-ID aggregates. Call \code{\link{blsFiles}(data_source, email)}
+to see what exists. Ignored (with a warning if non-NULL) for
+\code{"legacy"}-engine sources, whose lookup joins are tied to their
+default file: \code{cpi}, \code{eci}, \code{jolts}, \code{ces},
+\code{ces_allemp}, \code{ces_total}, \code{averageprice}, \code{food},
+\code{sae}, \code{laus}.}
 
 \item{max_mb}{Numeric, default 500. For \code{"derived"}-engine sources
 only: refuse to download a data file larger than this without an
 explicit override (e.g. \code{osh_characteristics} is 2.9 GB). Set
-\code{Inf} to disable. Ignored for the original 12 sources.}
+\code{Inf} to disable. Ignored for \code{"legacy"}-engine sources (see
+\code{file} above).}
 }
 \value{
 A tibble containing the merged data with columns for:
