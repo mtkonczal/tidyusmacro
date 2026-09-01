@@ -16,3 +16,8 @@
 ^\.Rhistory$
 ^download_jobs_revisions\.py$
 ^__pycache__$
+^verification$
+^BLS_COVERAGE_PLAN\.md$
+^recommendations\.md$
+^proposed$
+^fixtures$

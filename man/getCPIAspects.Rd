@@ -22,7 +22,13 @@ A tibble with one row per series/month/aspect_type and columns:
 \item{series_id}{Full BLS series identifier}
 \item{area_code, item_code, seasonal, periodicity_code}{Components parsed
 out of \code{series_id}}
-\item{year, period, date}{Observation month}
+\item{year, period, date}{Observation month. Dates come from the shared
+parser in \code{bls_parse_period()}, the same one \code{getBLSFiles()}
+uses.}
+\item{freq, is_average}{Frequency implied by the BLS period code, and
+whether the row is a BLS-computed average. Every aspect type BLS
+currently publishes is monthly (verified live 2026-08-31), so
+\code{is_average} is presently \code{FALSE} throughout.}
 \item{aspect_type}{Aspect code (see Details)}
 \item{value}{Published value as a character string, exactly as distributed}
 \item{value_num}{Numeric version of \code{value}; \code{NA} for the text

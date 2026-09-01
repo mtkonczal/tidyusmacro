@@ -1,5 +1,22 @@
 # BLS flat-file layer: recommendations
 
+> **Status, 2026-08-31: implemented, and then some.** Everything in this file
+> shipped, with one deliberate departure. Section 3 proposed keeping the
+> original ten sources on their hand-maintained join list while new sources used
+> the derived-key engine. That two-engine split was a migration scaffold, not a
+> design: it meant half the package missed every subsequent fix, and the two
+> exceptions the hand-mapped list carried (`ce.datatype`, `la.state_region_division`)
+> turned out to be handled correctly by the derived rule anyway, because that
+> rule reads column names rather than file stems. The legacy engine was deleted
+> once a live before/after diff over all ten sources confirmed parity. That diff
+> is reproducible via `verification/capture.R` and `verification/compare.R`.
+> `proposed/bls_rewrite.R`, referenced below, has been deleted: it was superseded
+> by the shipped `R/bls-*.R` files and had diverged from them. The `fixtures/`
+> directory that step 0 of section 6 describes has also been removed; its job is
+> now done by `verification/capture.R` and `verification/compare.R`, which
+> regenerate the before/after diff on demand instead of committing binary
+> snapshots.
+
 Notes from a working session on 2026-08-19. Nothing here is from memory. Every
 fact about BLS was verified by fetching `https://download.bls.gov/pub/time.series/`
 that day: the directory listing for all 66 folders, and the header row of every

@@ -48,20 +48,14 @@
 #'   exist. Set \code{FALSE} to drop them, e.g. before a \code{group_by(date)}
 #'   across many series where an average row would otherwise land on the same
 #'   December date as that year's real December observation.
-#' @param file Character, optional. Only used for \code{"derived"}-engine
-#'   sources (see \code{blsSources()$join_engine}); picks a non-default data
-#'   file within that survey, e.g. \code{file = "data.21.Aggregates"} for
-#'   PPI's FD-ID aggregates. Call \code{\link{blsFiles}(data_source, email)}
-#'   to see what exists. Ignored (with a warning if non-NULL) for
-#'   \code{"legacy"}-engine sources, whose lookup joins are tied to their
-#'   default file: \code{cpi}, \code{eci}, \code{jolts}, \code{ces},
-#'   \code{ces_allemp}, \code{ces_total}, \code{averageprice}, \code{food},
-#'   \code{sae}, \code{laus}.
-#' @param max_mb Numeric, default 500. For \code{"derived"}-engine sources
-#'   only: refuse to download a data file larger than this without an
-#'   explicit override (e.g. \code{osh_characteristics} is 2.9 GB). Set
-#'   \code{Inf} to disable. Ignored for \code{"legacy"}-engine sources (see
-#'   \code{file} above).
+#' @param file Character, optional. Picks a non-default data file within the
+#'   survey, e.g. \code{file = "data.21.Aggregates"} for PPI's FD-ID
+#'   aggregates. Call \code{\link{blsFiles}(data_source, email)} to see what
+#'   exists. Required for the discontinued (tier 4) surveys, which have no
+#'   default file.
+#' @param max_mb Numeric, default 500. Refuse to download a data file larger
+#'   than this without an explicit override (e.g. \code{osh_characteristics}
+#'   is 2.9 GB). Set \code{Inf} to disable.
 #'
 #' @return A tibble containing the merged data with columns for:
 #'   \item{series_id}{Unique identifier for each data series}
@@ -105,6 +99,30 @@
 #' (2026-08-19): 26\% of rows were affected. This version uses one parser for
 #' every period code (see \code{is_average} above) and gives every row a
 #' correct date.
+#'
+#' The month is the \emph{end} of the period, matching the pre-existing ECI
+#' convention (\code{Q01} is March). Annual and half-year rows land in the last
+#' month they cover: \code{M13}/\code{S03}/\code{Q05}/\code{A01} in December,
+#' \code{S01} in June.
+#'
+#' The \emph{day} separates observed values from computed averages. An observed
+#' value is dated the \strong{first} of its month, matching every other date
+#' this package returns (\code{\link{getFRED}}, \code{\link{getNIPAFiles}}). A
+#' computed average is dated the \strong{last day} of its terminal month:
+#' \code{2024-12-31} for \code{M13}, \code{2024-06-30} for \code{S01}.
+#'
+#' That rule exists because the month alone cannot separate them. There is no
+#' month an annual average can occupy that some observed month does not already
+#' own, so under a uniform first-of-month rule the 2024 annual average and the
+#' real December 2024 observation are the same \code{Date}, and a
+#' \code{group_by(date)} across many series double-counts silently. With the day
+#' rule that is impossible rather than merely documented.
+#'
+#' Averages still share a date with each \emph{other}: \code{M13}, \code{S02}
+#' and \code{S03} all land on December 31. They are all averages, so
+#' \code{is_average} or \code{freq} separates them and no observed value is ever
+#' contaminated. The full key is \code{(series_id, date, freq)}, not
+#' \code{date} alone.
 #'
 #' @section CPI relative importance:
 #' Relative importance comes from \code{cu.aspect} (aspect type \code{"I"}),
@@ -183,155 +201,45 @@ getBLSFiles <- function(data_source, email, weights = TRUE, include_averages = T
   data_source <- spec$name
   prefix <- spec$prefix
 
-  # Set HTTP user agent using the supplied email (BLS requires a contact
-  # email in the user agent); restore the user's setting on exit per CRAN policy
-  old_opts <- options(HTTPUserAgent = email)
-  on.exit(options(old_opts), add = TRUE)
+  main_file <- if (is.null(file)) spec$file else file
+  if (is.na(main_file)) {
+    # Tier 4 (discontinued) sources are registered for discoverability and have
+    # no default file. Without this check the NA falls through to a subset that
+    # returns NA-filled rows, and the failure surfaces as "missing value where
+    # TRUE/FALSE needed" after a wasted round trip.
+    stop(
+      "'", data_source, "' is a discontinued survey with no default data file. ",
+      "Call blsFiles('", data_source, "', email, data_only = FALSE) to see what ",
+      "it still publishes, then pass file = explicitly.",
+      call. = FALSE
+    )
+  }
 
-  if (spec$join_engine == "legacy") {
-    if (!is.null(file)) {
-      warning(
-        "file= is not supported for '", data_source, "': its lookup joins ",
-        "are tied to the default file (", spec$file, "). Ignoring.",
+  # Lookup stems pinned in the registry, if any. When present the directory
+  # listing becomes optional: see bls_build_series() for why that matters on a
+  # release morning.
+  pinned <- bls_registry_lookups(spec)
+
+  listing <- tryCatch(bls_list_files(prefix, email), error = function(e) e)
+  if (inherits(listing, "error")) {
+    if (is.null(pinned)) {
+      stop(
+        "Could not list the files BLS publishes for '", prefix, "': ",
+        conditionMessage(listing),
         call. = FALSE
       )
     }
-
-    # fmt: skip
-    legacy_aux <- list(
-      cpi          = c("series", "item", "area"),
-      eci          = c("series", "industry", "owner", "subcell", "occupation", "periodicity", "estimate"),
-      jolts        = c("series", "industry", "state", "dataelement", "sizeclass"),
-      ces          = c("series", "datatype", "supersector", "industry"),
-      ces_allemp   = c("series", "datatype", "supersector", "industry"),
-      ces_total    = c("series", "datatype", "supersector", "industry"),
-      averageprice = c("series", "area", "item"),
-      food         = c("series", "area", "item"),
-      sae          = c("series", "industry", "data_type", "supersector", "state", "area"),
-      laus         = c("series", "state_region_division", "measure", "area", "area_type")
+    warning(
+      "Could not read the BLS directory listing (", conditionMessage(listing),
+      "). Proceeding with the lookup list pinned in the registry; the ",
+      "max_mb size guard falls back to a HEAD request.",
+      call. = FALSE
     )
-    aux_files <- legacy_aux[[data_source]]
-    main_file <- spec$file
+    listing <- NULL
+  }
 
-    base_url <- paste0(bls_base_url, prefix, "/", prefix, ".")
-
-    # Download and process the "series" file first.
-    if ("series" %in% aux_files) {
-      message("Downloading series file...")
-      series_df <- readr::read_tsv(
-        paste0(base_url, "series"),
-        col_types = readr::cols()
-      )
-      # Clean series_id by removing spaces
-      series_df <- dplyr::mutate(series_df, series_id = gsub(" ", "", series_id))
-      # Remove "series" from the auxiliary file list as it is already processed.
-      aux_files <- setdiff(aux_files, "series")
-    } else {
-      stop(
-        "The 'series' file is required but was not found in the auxiliary file list."
-      )
-    }
-
-    # BLS metadata columns that appear in most lookup files. These are useful for
-
-    # understanding hierarchy (display_level) but have identical names across files.
-    # We rename them with the file prefix to avoid .x/.y suffix collisions.
-    # - display_level: hierarchy depth (0 = top level, higher = more detailed)
-    # - selectable: whether item can be selected in BLS Data Finder UI
-    # - sort_sequence: display order in BLS tools
-    metadata_cols_to_rename <- c("display_level", "selectable", "sort_sequence")
-
-    # Download and merge the remaining auxiliary files with series_df.
-    for (aux in aux_files) {
-      message("Downloading file: ", aux)
-      tmp_df <- readr::read_tsv(paste0(base_url, aux), col_types = readr::cols())
-
-      # Determine the join key(s) for this auxiliary file.
-      # Most files use a simple "{file}_code" pattern, but some have compound keys
-      # or non-standard naming conventions.
-      join_key <- if (aux == "datatype") {
-        # CES datatype file uses "data_type_code" not "datatype_code"
-        "data_type_code"
-      } else if (aux == "state_region_division") {
-        # LAU state/region/division lookup keys on "srd_code"
-        "srd_code"
-      } else {
-        paste0(aux, "_code")
-      }
-
-      # Rename colliding columns with the file prefix, e.g. "display_level"
-      # becomes "item_display_level" for the item file. Two sources:
-      #  1. Known BLS metadata columns (always prefixed, so names are stable
-      #     across data sources regardless of which files collide), and
-      #  2. Any other non-key column already present in series_df, detected
-      #     dynamically so unanticipated overlaps never yield .x/.y suffixes.
-      collision_cols <- setdiff(
-        intersect(names(tmp_df), names(series_df)),
-        join_key
-      )
-      cols_to_rename <- union(
-        intersect(names(tmp_df), metadata_cols_to_rename),
-        collision_cols
-      )
-      if (length(cols_to_rename) > 0) {
-        new_names <- paste0(aux, "_", cols_to_rename)
-        names(tmp_df)[match(cols_to_rename, names(tmp_df))] <- new_names
-      }
-
-      # Handle join_key being length 1 OR length > 1
-      missing_in_series <- setdiff(join_key, names(series_df))
-      missing_in_tmp <- setdiff(join_key, names(tmp_df))
-
-      if (length(missing_in_series) > 0 || length(missing_in_tmp) > 0) {
-        warning(
-          "Join key(s) missing. ",
-          if (length(missing_in_series) > 0) {
-            paste0(
-              "Missing in series_df: ",
-              paste(missing_in_series, collapse = ", "),
-              ". "
-            )
-          } else {
-            ""
-          },
-          if (length(missing_in_tmp) > 0) {
-            paste0(
-              "Missing in ",
-              aux,
-              ": ",
-              paste(missing_in_tmp, collapse = ", "),
-              ". "
-            )
-          } else {
-            ""
-          },
-          "Skipping file: ",
-          aux
-        )
-      } else {
-        # Lookup tables must be unique on their key; "many-to-one" makes
-        # dplyr error loudly instead of silently duplicating series rows.
-        series_df <- dplyr::left_join(
-          series_df, tmp_df,
-          by = join_key,
-          relationship = "many-to-one"
-        )
-      }
-    }
-
-    # Download the main data file.
-    message("Downloading main data file: ", main_file)
-    main_df <- readr::read_tsv(
-      paste0(base_url, main_file),
-      col_types = readr::cols()
-    )
-  } else {
-    # "derived" join engine: registry-driven sources added after the initial
-    # 12. See R/bls-join.R for bls_build_series(), which derives the lookup
-    # join key by column-name intersection instead of a hardcoded list.
-    listing <- bls_list_files(prefix, email)
-    main_file <- if (is.null(file)) spec$file else file
-    target <- listing[listing$stem == main_file, , drop = FALSE]
+  if (!is.null(listing)) {
+    target <- listing[listing$stem %in% main_file, , drop = FALSE]
     if (!nrow(target)) {
       stop(
         "File '", prefix, ".", main_file, "' does not exist. Call blsFiles('",
@@ -339,7 +247,13 @@ getBLSFiles <- function(data_source, email, weights = TRUE, include_averages = T
         " data file(s) in this survey.", call. = FALSE
       )
     }
-    mb <- target$bytes[1] / 1e6
+    bytes <- target$bytes[1]
+  } else {
+    bytes <- bls_head_size(prefix, main_file, email)
+  }
+
+  mb <- bytes / 1e6
+  if (!is.na(mb)) {
     if (mb > max_mb) {
       stop(
         "'", prefix, ".", main_file, "' is ", round(mb, 1), " MB, over the ",
@@ -348,21 +262,38 @@ getBLSFiles <- function(data_source, email, weights = TRUE, include_averages = T
       )
     }
     message("Downloading ", prefix, ".", main_file, " (", round(mb, 1), " MB)...")
-
-    series_df <- bls_build_series(prefix, email, files = listing)
-    main_df <- bls_read(prefix, main_file, email, show_progress = TRUE)
+  } else {
+    message("Downloading ", prefix, ".", main_file, " (size unknown)...")
   }
 
-  # Clean and convert the main data.
-  main_df <- main_df %>%
-    dplyr::mutate(
-      series_id = gsub(" ", "", series_id),
-      value = as.numeric(value)
+  series_df <- bls_build_series(
+    prefix, email,
+    files = listing, lookups = pinned
+  )
+  main_df <- bls_read(prefix, main_file, email, show_progress = TRUE)
+
+  # Clean and convert the main data. Everything arrives as character (see
+  # bls_read()); `value` is the one column converted here, the rest are handled
+  # after the joins by bls_retype().
+  main_df$series_id <- gsub(" ", "", main_df$series_id)
+  raw_value <- main_df$value
+  # as.numeric() already tolerates surrounding whitespace, so the trim is done
+  # only on the rows that failed to parse rather than on the whole column: a
+  # full trimws() pass costs ~1.6s on the 8.3M-row CES file and buys nothing.
+  main_df$value <- suppressWarnings(as.numeric(raw_value))
+  bad <- is.na(main_df$value) & !is.na(raw_value)
+  unparsed <- if (any(bad)) sum(nzchar(trimws(raw_value[bad]))) else 0L
+  if (unparsed > 0) {
+    message(
+      "Note: ", format(unparsed, big.mark = ","),
+      " value(s) were not numeric and became NA (BLS writes '-' for suppressed ",
+      "or unavailable observations)."
     )
+  }
 
   # Shared period parser: see bls_parse_period() in R/bls-period.R for why
-  # this replaced substr(period, 2, 3) (silently wrong for M13/S01/S02/S03,
-  # and previously only correct for ECI's Q01-Q04 via a special case).
+  # this replaced substr(period, 2, 3), and for the day-of-month convention
+  # that keeps computed averages off the same date as observed values.
   per <- bls_parse_period(main_df$year, main_df$period)
   main_df$date <- per$date
   main_df$freq <- per$freq
@@ -370,6 +301,14 @@ getBLSFiles <- function(data_source, email, weights = TRUE, include_averages = T
   if (!include_averages) {
     n0 <- nrow(main_df)
     main_df <- main_df[!main_df$is_average, , drop = FALSE]
+    if (nrow(main_df) == 0) {
+      stop(
+        "include_averages = FALSE removed every row of '", data_source,
+        "': this source publishes nothing but BLS-computed averages (CEX, for ",
+        "one, publishes only A01 annual rows). Re-call with ",
+        "include_averages = TRUE.", call. = FALSE
+      )
+    }
     if (n0 > nrow(main_df)) {
       message(
         "Dropped ", format(n0 - nrow(main_df), big.mark = ","),
@@ -396,10 +335,21 @@ getBLSFiles <- function(data_source, email, weights = TRUE, include_averages = T
     relationship = "many-to-one"
   )
 
+  # Restore real types to the few columns that are genuinely numeric or logical
+  # (display_level above all; see R/bls-types.R). Done before the weight join so
+  # the join keys are settled and `year` is an integer in the returned table.
+  result_df <- bls_retype(result_df)
+
   # Attach CPI relative importance from cu.aspect. Keyed on area + item + date
   # rather than series_id: BLS publishes weights only on the NSA series, but the
   # weight belongs to the item, so a series_id join would leave every
   # seasonally adjusted row NA. See the "CPI relative importance" section above.
+  #
+  # Note the interaction with the period convention: relative importance is a
+  # monthly concept and is published only on M01-M12, so it is dated the first
+  # of the month. Computed averages are dated the last day of their period and
+  # therefore match no weight, which is the correct outcome -- an annual average
+  # has no single month's relative importance.
   if (isTRUE(weights) && data_source == "cpi") {
     asp <- getCPIAspects(email, survey = prefix)
     weight_df <- build_weight_bases(asp[asp$aspect_type == "I", , drop = FALSE])

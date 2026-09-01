@@ -1,5 +1,13 @@
 # Plan: complete flat-file coverage for `getBLSFiles()`
 
+> **Status, 2026-08-31: complete.** All three bugs in section 2 are fixed, the
+> architecture in section 3 shipped for *every* source (the legacy/derived split
+> it proposed was removed; see the banner in `recommendations.md`), and the
+> validation checks in section 7 have been run live. The period fix gained a
+> second half after this was written: computed averages are dated the last day
+> of their period, not the first of December, so they can no longer share a date
+> with an observed value. See `NEWS.md`.
+
 > **Read `recommendations.md` first.** It covers the rewrite-vs-refactor
 > decision, the sequencing, and the verified bug detail. This file is the
 > survey inventory and tiering it refers to. `proposed/bls_rewrite.R` is the

@@ -5,3 +5,6 @@ docs/
 .claude/
 *.Rcheck/
 *.tar.gz
+verification/*
+!verification/capture.R
+!verification/compare.R

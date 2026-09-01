@@ -1,84 +1,84 @@
 # Registry of BLS sources reachable through getBLSFiles(), plus the
 # deprecated-alias table and the blsSources()/blsFiles() discovery helpers.
 #
-# Two families of source live here, distinguished by `join_engine`:
-#   "legacy"  the 12 sources getBLSFiles() has always supported (including
-#             `se`/`su`, renamed `sae`/`laus` -- see bls_deprecated_aliases).
-#             getBLSFiles() still joins their lookups with the original
-#             hand-maintained per-source key list, so their output is
-#             unchanged apart from the period-parsing fix.
-#   "derived" sources added by this version. getBLSFiles() joins their
-#             lookups with bls_build_series() (R/bls-join.R): the key is
-#             derived by column-name intersection rather than hardcoded.
-#             See recommendations.md section 4 for why, and what that rule
-#             gets right that a naive "{file}_code" rule does not.
+# Every source uses the same join engine: bls_build_series() (R/bls-join.R)
+# derives each lookup's join key by column-name intersection with the .series
+# file. The hand-maintained per-source key list that used to serve the original
+# ten sources was deleted once a live before/after diff confirmed the derived
+# rule reproduces it (see verification/ and NEWS.md).
+#
+# `lookups` optionally pins the lookup stems for a source. When set,
+# getBLSFiles() does not need the BLS directory listing to discover them, so a
+# change to BLS's HTML autoindex page cannot take the source down; the listing
+# is then used only for the size guard, and its failure is a warning rather
+# than an error. Pinned for the release-calendar sources, left NA (discover
+# from the listing) everywhere else. Captured live 2026-08-31; a lookup BLS
+# adds later is picked up only after this is refreshed, which is the trade for
+# not depending on a scraped page at 8:30am.
 #
 # `frequency` is advisory metadata only, read by nothing but blsSources().
 # Dates come from the actual period codes in the data (bls_parse_period()),
 # so a wrong value here is a documentation bug, not a data bug.
 #
 # `approx_mb` is the size of the default file as listed by BLS on 2026-08-19.
-# It is informational; getBLSFiles() checks the live size via bls_list_files()
-# before downloading a "derived" source, not this column.
+# It is informational; getBLSFiles() checks the live size before downloading.
 
 bls_registry <- function() {
   r <- function(name, prefix, file, title, frequency, tier, approx_mb,
-                join_engine, status = "current", notes = "") {
+                status = "current", notes = "") {
     data.frame(
       name = name, prefix = prefix, file = file, title = title,
       frequency = frequency, tier = tier, approx_mb = approx_mb,
-      join_engine = join_engine, status = status, notes = notes,
+      status = status, notes = notes, lookups = NA_character_,
       stringsAsFactors = FALSE
     )
   }
 
   out <- rbind(
-    # --- Tier 1, legacy join engine: unchanged from pre-existing releases,
-    # other than the period fix and (sae/laus) the name. ---------------------
-    r("cpi", "cu", "data.0.Current", "Consumer Price Index, all urban consumers (CPI-U)", "monthly", 1, 48.9, "legacy"),
-    r("eci", "ci", "data.1.AllData", "Employment Cost Index", "quarterly", 1, 8.6, "legacy"),
-    r("cex", "cx", "data.1.AllData", "Consumer Expenditure Survey", "annual", 1, 120.8, "derived", notes = "Moved off the legacy join list 2026-08-31 to pick up cx.subcategory, previously missing (see BLS_COVERAGE_PLAN.md section 2.3)."),
-    r("jolts", "jt", "data.1.AllItems", "Job Openings and Labor Turnover Survey", "monthly", 1, 34.4, "legacy"),
-    r("cps", "ln", "data.1.AllData", "Current Population Survey, labor force statistics", "monthly", 1, 389.7, "derived", notes = "Moved off the legacy join list 2026-08-31: the old hardcoded list joined 7 lookups, ln publishes far more (see BLS_COVERAGE_PLAN.md section 2.3)."),
-    r("ces", "ce", "data.0.AllCESSeries", "Current Employment Statistics, national", "monthly", 1, 350.2, "legacy"),
-    r("ces_allemp", "ce", "data.01a.CurrentSeasAE", "CES all employees, seasonally adjusted", "monthly", 1, 6.0, "legacy"),
-    r("ces_total", "ce", "data.00a.TotalNonfarm.Employment", "CES total nonfarm employment", "monthly", 1, 0.5, "legacy"),
-    r("averageprice", "ap", "data.0.Current", "Average price data", "monthly", 1, 8.9, "legacy"),
-    r("food", "ap", "data.3.Food", "Average price data, food items", "monthly", 1, 3.5, "legacy"),
-    r("sae", "sm", "data.0.Current", "State and Area Employment, Hours, and Earnings", "monthly", 1, 329.5, "legacy", notes = "Was reachable as 'se', a misnomer: 'se' is not a BLS prefix."),
-    r("laus", "la", "data.1.CurrentS", "Local Area Unemployment Statistics", "monthly", 1, 50.0, "legacy", notes = "Was reachable as 'su', which collides with the real BLS prefix 'su' (chained CPI)."),
+    # --- Tier 1: the monthly and quarterly release-calendar workhorses. ----
+    r("cpi", "cu", "data.0.Current", "Consumer Price Index, all urban consumers (CPI-U)", "monthly", 1, 48.9),
+    r("eci", "ci", "data.1.AllData", "Employment Cost Index", "quarterly", 1, 8.6),
+    r("cex", "cx", "data.1.AllData", "Consumer Expenditure Survey", "annual", 1, 120.8, notes = "Moved off the legacy join list 2026-08-31 to pick up cx.subcategory, previously missing (see BLS_COVERAGE_PLAN.md section 2.3)."),
+    r("jolts", "jt", "data.1.AllItems", "Job Openings and Labor Turnover Survey", "monthly", 1, 34.4),
+    r("cps", "ln", "data.1.AllData", "Current Population Survey, labor force statistics", "monthly", 1, 389.7, notes = "Moved off the legacy join list 2026-08-31: the old hardcoded list joined 7 lookups, ln publishes far more (see BLS_COVERAGE_PLAN.md section 2.3)."),
+    r("ces", "ce", "data.0.AllCESSeries", "Current Employment Statistics, national", "monthly", 1, 350.2),
+    r("ces_allemp", "ce", "data.01a.CurrentSeasAE", "CES all employees, seasonally adjusted", "monthly", 1, 6.0),
+    r("ces_total", "ce", "data.00a.TotalNonfarm.Employment", "CES total nonfarm employment", "monthly", 1, 0.5),
+    r("averageprice", "ap", "data.0.Current", "Average price data", "monthly", 1, 8.9),
+    r("food", "ap", "data.3.Food", "Average price data, food items", "monthly", 1, 3.5),
+    r("sae", "sm", "data.0.Current", "State and Area Employment, Hours, and Earnings", "monthly", 1, 329.5, notes = "Was reachable as 'se', a misnomer: 'se' is not a BLS prefix."),
+    r("laus", "la", "data.1.CurrentS", "Local Area Unemployment Statistics", "monthly", 1, 50.0, notes = "Was reachable as 'su', which collides with the real BLS prefix 'su' (chained CPI)."),
 
-    # --- Tier 1, derived join engine: new in this version. -----------------
-    r("cpi_w", "cw", "data.0.Current", "Consumer Price Index, urban wage earners (CPI-W)", "monthly", 1, 46.7, "derived", notes = "Basis for the Social Security COLA."),
-    r("cpi_chained", "su", "data.0.Current", "Chained CPI for all urban consumers (C-CPI-U)", "monthly", 1, 0.4, "derived", notes = "BLS prefix 'su'. Not the deprecated alias 'su', which meant LAUS."),
-    r("ppi", "wp", "data.0.Current", "Producer Price Index, commodity", "monthly", 1, 71.6, "derived", notes = "wp.item is keyed on (group_code, item_code); auto-detected."),
-    r("ppi_industry", "pc", "data.0.Current", "Producer Price Index, industry and product", "monthly", 1, 64.3, "derived", notes = "pc.product is keyed on (industry_code, product_code); auto-detected."),
-    r("import_export", "ei", "data.0.Current", "Import and export price indexes", "monthly", 1, 11.7, "derived"),
-    r("ecec", "cm", "data.1.AllData", "Employer Costs for Employee Compensation", "quarterly", 1, 26.3, "derived"),
-    r("productivity", "pr", "data.1.AllData", "Major sector productivity and costs", "quarterly", 1, 3.2, "derived", notes = "Unit labor costs live here."),
+    r("cpi_w", "cw", "data.0.Current", "Consumer Price Index, urban wage earners (CPI-W)", "monthly", 1, 46.7, notes = "Basis for the Social Security COLA."),
+    r("cpi_chained", "su", "data.0.Current", "Chained CPI for all urban consumers (C-CPI-U)", "monthly", 1, 0.4, notes = "BLS prefix 'su'. Not the deprecated alias 'su', which meant LAUS."),
+    r("ppi", "wp", "data.0.Current", "Producer Price Index, commodity", "monthly", 1, 71.6, notes = "wp.item is keyed on (group_code, item_code); auto-detected."),
+    r("ppi_industry", "pc", "data.0.Current", "Producer Price Index, industry and product", "monthly", 1, 64.3, notes = "pc.product is keyed on (industry_code, product_code); auto-detected."),
+    r("import_export", "ei", "data.0.Current", "Import and export price indexes", "monthly", 1, 11.7),
+    r("ecec", "cm", "data.1.AllData", "Employer Costs for Employee Compensation", "quarterly", 1, 26.3),
+    r("productivity", "pr", "data.1.AllData", "Major sector productivity and costs", "quarterly", 1, 3.2, notes = "Unit labor costs live here."),
 
     # --- Tier 2: annual and structural, registered but not all live-verified
     # this release. See BLS_COVERAGE_PLAN.md section 4. ---------------------
-    r("oews", "oe", "data.1.AllData", "Occupational Employment and Wage Statistics", "annual", 2, 331.5, "derived"),
-    r("bed", "bd", "data.1.AllItems", "Business Employment Dynamics", "quarterly", 2, 253.5, "derived"),
-    r("cps_earnings", "le", "data.1.AllData", "CPS earnings", "quarterly", 2, 10.5, "derived"),
-    r("cps_union", "lu", "data.1.AllData", "CPS union membership", "annual", 2, 1.4, "derived"),
-    r("ind_productivity", "ip", "data.1.AllData", "Industry productivity", "annual", 2, 41.4, "derived"),
+    r("oews", "oe", "data.1.AllData", "Occupational Employment and Wage Statistics", "annual", 2, 331.5),
+    r("bed", "bd", "data.1.AllItems", "Business Employment Dynamics", "quarterly", 2, 253.5),
+    r("cps_earnings", "le", "data.1.AllData", "CPS earnings", "quarterly", 2, 10.5),
+    r("cps_union", "lu", "data.1.AllData", "CPS union membership", "annual", 2, 1.4),
+    r("ind_productivity", "ip", "data.1.AllData", "Industry productivity", "annual", 2, 41.4),
 
     # --- Tier 3: specialist, registered on request. -------------------------
-    r("tfp", "mp", "data.1.AllData", "Major sector total factor productivity", "annual", 3, 7.4, "derived"),
-    r("cps_family", "fm", "data.1.AllData", "CPS marital and family labor force statistics", "annual", 3, 1.6, "derived"),
-    r("cps_veterans", "kv", "data.1.AllData", "CPS veterans supplement", "annual", 3, 1.2, "derived"),
-    r("atus", "tu", "data.1.AllData", "American Time Use Survey", "annual", 3, 110.3, "derived"),
-    r("ncs_benefits", "nb", "data.1.AllData", "National Compensation Survey, benefits", "annual", 3, 42.3, "derived"),
-    r("ors", "or", "data.1.AllData", "Occupational Requirements Survey", "annual", 3, 3.4, "derived"),
-    r("work_stoppages", "ws", "data.1.AllData", "Work stoppages", "annual", 3, 0.2, "derived"),
-    r("emp_projections", "ep", "data.1.AllData", "Employment projections", "annual", 3, 6.2, "derived"),
-    r("cfoi", "fa", "data.1.AllData", "Census of Fatal Occupational Injuries", "annual", 3, 35.1, "derived"),
-    r("osh_industry", "is", "data.1.AllData", "Occupational injuries and illnesses, industry", "annual", 3, 241.2, "derived"),
+    r("tfp", "mp", "data.1.AllData", "Major sector total factor productivity", "annual", 3, 7.4),
+    r("cps_family", "fm", "data.1.AllData", "CPS marital and family labor force statistics", "annual", 3, 1.6),
+    r("cps_veterans", "kv", "data.1.AllData", "CPS veterans supplement", "annual", 3, 1.2),
+    r("atus", "tu", "data.1.AllData", "American Time Use Survey", "annual", 3, 110.3),
+    r("ncs_benefits", "nb", "data.1.AllData", "National Compensation Survey, benefits", "annual", 3, 42.3),
+    r("ors", "or", "data.1.AllData", "Occupational Requirements Survey", "annual", 3, 3.4),
+    r("work_stoppages", "ws", "data.1.AllData", "Work stoppages", "annual", 3, 0.2),
+    r("emp_projections", "ep", "data.1.AllData", "Employment projections", "annual", 3, 6.2),
+    r("cfoi", "fa", "data.1.AllData", "Census of Fatal Occupational Injuries", "annual", 3, 35.1),
+    r("osh_industry", "is", "data.1.AllData", "Occupational injuries and illnesses, industry", "annual", 3, 241.2),
     r(
       "osh_characteristics", "ca", "data.1.AllData",
-      "Occupational injuries and illnesses, case characteristics", "annual", 3, 2885.9, "derived",
+      "Occupational injuries and illnesses, case characteristics", "annual", 3, 2885.9,
       notes = "2.9 GB. getBLSFiles() will refuse this without max_mb raised explicitly."
     )
   )
@@ -137,18 +137,71 @@ bls_registry <- function() {
   disc_rows <- data.frame(
     name = disc$prefix, prefix = disc$prefix, file = NA_character_,
     title = disc$title, frequency = NA_character_, tier = 4L,
-    approx_mb = NA_real_, join_engine = "derived", status = "discontinued",
+    approx_mb = NA_real_, status = "discontinued",
     notes = paste0(
       "Last data update ", disc$last_update,
       ". No default file; pass file= explicitly (see blsFiles())."
     ),
+    lookups = NA_character_,
     stringsAsFactors = FALSE
   )
+
+  # Lookup stems pinned for the release-calendar (tier 1) sources, captured
+  # live from the BLS directory listing on 2026-08-31. Pinning removes the
+  # scraped autoindex page from the critical path: getBLSFiles() can build the
+  # full labeled series table for these without it. Every other source
+  # discovers its lookups from the listing at call time.
+  #
+  # To refresh after BLS adds a lookup file:
+  #   fl <- bls_list_files("<prefix>", email); bls_lookup_candidates(fl)$stem
+  pinned <- list(
+    averageprice  = c("area", "item", "seasonal"),
+    ces           = c("datatype", "industry", "seasonal", "supersector"),
+    ces_allemp    = c("datatype", "industry", "seasonal", "supersector"),
+    ces_total     = c("datatype", "industry", "seasonal", "supersector"),
+    cex           = c("category", "characteristics", "demographics", "item", "process", "subcategory"),
+    cpi           = c("area", "base", "item", "periodicity", "seasonal"),
+    cpi_chained   = c("area", "base", "item", "periodicity", "seasonal"),
+    cpi_w         = c("area", "base", "item", "periodicity", "seasonal"),
+    cps           = c("absn", "activity", "ages", "born", "cert", "chld", "class",
+                      "disa", "duration", "education", "entr", "expr", "hheader",
+                      "hour", "indy", "jdes", "lfst", "look", "mari", "mjhs",
+                      "occupation", "orig", "pcts", "periodicity", "race", "rjnw",
+                      "rnlf", "rwns", "seasonal", "seek", "sexs", "tdat", "tlwk",
+                      "vets", "wkst"),
+    ecec          = c("area", "datatype", "estimate", "industry", "occupation",
+                      "owner", "seasonal", "subcell"),
+    eci           = c("area", "estimate", "industry", "occupation", "owner",
+                      "periodicity", "seasonal", "subcell"),
+    food          = c("area", "item", "seasonal"),
+    import_export = c("index", "seasonal"),
+    jolts         = c("area", "dataelement", "industry", "ratelevel", "seasonal",
+                      "sizeclass", "state"),
+    laus          = c("area", "area_type", "measure", "seasonal", "state_region_division"),
+    ppi           = c("group", "item", "seasonal"),
+    ppi_industry  = c("industry", "product", "seasonal"),
+    productivity  = c("class", "duration", "measure", "seasonal", "sector"),
+    sae           = c("area", "data_type", "industry", "seasonal", "state", "supersector")
+  )
+  idx <- match(names(pinned), out$name)
+  stopifnot(!anyNA(idx))
+  out$lookups[idx] <- vapply(pinned, paste, character(1), collapse = ",")
 
   out <- rbind(out, disc_rows)
   out$url <- paste0("https://download.bls.gov/pub/time.series/", out$prefix, "/")
   out$tier <- as.integer(out$tier)
   out[order(out$tier, out$name), ]
+}
+
+# Split a registry row's pinned `lookups` field back into a character vector.
+# Returns NULL when nothing is pinned, which tells bls_build_series() to
+# discover the lookups from the directory listing instead.
+bls_registry_lookups <- function(spec) {
+  lk <- spec$lookups
+  if (is.null(lk) || length(lk) != 1L || is.na(lk) || !nzchar(lk)) {
+    return(NULL)
+  }
+  trimws(strsplit(lk, ",", fixed = TRUE)[[1]])
 }
 
 # 'su' is a real BLS prefix (chained CPI); the old 'su' alias was squatting on

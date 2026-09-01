@@ -17,7 +17,13 @@
 #'   \item{series_id}{Full BLS series identifier}
 #'   \item{area_code, item_code, seasonal, periodicity_code}{Components parsed
 #'     out of \code{series_id}}
-#'   \item{year, period, date}{Observation month}
+#'   \item{year, period, date}{Observation month. Dates come from the shared
+#'     parser in \code{bls_parse_period()}, the same one \code{getBLSFiles()}
+#'     uses.}
+#'   \item{freq, is_average}{Frequency implied by the BLS period code, and
+#'     whether the row is a BLS-computed average. Every aspect type BLS
+#'     currently publishes is monthly (verified live 2026-08-31), so
+#'     \code{is_average} is presently \code{FALSE} throughout.}
 #'   \item{aspect_type}{Aspect code (see Details)}
 #'   \item{value}{Published value as a character string, exactly as distributed}
 #'   \item{value_num}{Numeric version of \code{value}; \code{NA} for the text
@@ -114,22 +120,20 @@
 getCPIAspects <- function(email, survey = c("cu", "cw"), aspect_type = NULL) {
   survey <- match.arg(survey)
 
-  # BLS requires a contact email in the user agent; restore on exit per CRAN policy
-  old_opts <- options(HTTPUserAgent = email)
-  on.exit(options(old_opts), add = TRUE)
-
-  url <- paste0(
-    "https://download.bls.gov/pub/time.series/",
-    survey,
-    "/",
-    survey,
-    ".aspect"
-  )
+  url <- paste0(bls_base_url, survey, "/", survey, ".aspect")
 
   message("Downloading aspect (weights/metadata) file: ", survey, ".aspect")
+  # Fetched through bls_get() for the same retries, HTTP/1.1 fallback and
+  # explicit user agent as the rest of the BLS layer: this is a ~31 MB download
+  # on the critical path of every getBLSFiles("cpi") call, and BLS returns 403
+  # to any request without a contact email in the User-Agent.
+  tmp <- tempfile(fileext = ".tsv")
+  on.exit(unlink(tmp), add = TRUE)
+  bls_get(url, email, dest = tmp)
+
   # Read every column as character: value holds text for aspect types H1/HC
   # ("S-Jan. 2012"), so a numeric read would coerce those to NA with a warning.
-  asp <- readr::read_tsv(url, col_types = readr::cols(.default = readr::col_character()))
+  asp <- readr::read_tsv(tmp, col_types = readr::cols(.default = readr::col_character()))
 
   asp <- dplyr::mutate(
     asp,
@@ -157,17 +161,23 @@ getCPIAspects <- function(email, survey = c("cu", "cw"), aspect_type = NULL) {
     seasonal = substr(series_id, 3, 3),
     periodicity_code = substr(series_id, 4, 4),
     area_code = substr(series_id, 5, 8),
-    item_code = substr(series_id, 9, nchar(series_id)),
-    date = as.Date(
-      paste(substr(period, 2, 3), "01", year, sep = "/"),
-      "%m/%d/%Y"
-    )
+    item_code = substr(series_id, 9, nchar(series_id))
   )
+
+  # Same shared parser getBLSFiles() uses (R/bls-period.R). This file used to
+  # compute the date as substr(period, 2, 3), the same bug fixed there. Every
+  # aspect type BLS currently publishes is M01-M12 (verified live 2026-08-31),
+  # so this changes no value today; it removes the trap that an M13 row would
+  # have been dated January of the following year.
+  per <- bls_parse_period(asp$year, asp$period)
+  asp$date <- per$date
+  asp$freq <- per$freq
+  asp$is_average <- per$is_average
 
   dplyr::as_tibble(asp[, c(
     "series_id", "area_code", "item_code", "seasonal", "periodicity_code",
-    "year", "period", "date", "aspect_type", "value", "value_num",
-    intersect("footnote_codes", names(asp))
+    "year", "period", "date", "freq", "is_average", "aspect_type", "value",
+    "value_num", intersect("footnote_codes", names(asp))
   )])
 }
 
@@ -213,12 +223,29 @@ cpi_weights_monthly <- function(email, survey = "cu") {
 #' @noRd
 #' @importFrom dplyr left_join as_tibble
 build_weight_bases <- function(asp) {
+  # Relative importance is a monthly concept, and the 11-month shift below is
+  # only meaningful on a monthly index. Keep observed monthly rows only. This
+  # filter used to be implicit and wrong: month_index was
+  # year * 12 + substr(period, 2, 3), so an M13 row would have become month 13,
+  # i.e. January of the following year, and the uniqueness check below would
+  # not have caught it because 13 collides with no real month.
+  per <- bls_parse_period(asp$year, asp$period)
+  keep <- !is.na(per$freq) & per$freq == "monthly" & !per$is_average
+  if (any(!keep)) {
+    message(
+      "Dropped ", format(sum(!keep), big.mark = ","),
+      " non-monthly relative-importance row(s) before building the weight panel."
+    )
+    asp <- asp[keep, , drop = FALSE]
+    per <- per[keep, , drop = FALSE]
+  }
+
   ri <- data.frame(
     area_code = asp$area_code,
     item_code = asp$item_code,
-    date = asp$date,
-    month_index = as.integer(asp$year) * 12L +
-      as.integer(substr(asp$period, 2, 3)),
+    date = per$date,
+    month_index = as.integer(format(per$date, "%Y")) * 12L +
+      as.integer(format(per$date, "%m")),
     weight = asp$value_num,
     stringsAsFactors = FALSE
   )
