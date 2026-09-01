@@ -1,7 +1,38 @@
-# tidyusmacro (development version)
+# tidyusmacro 0.3.0
 
 ## Breaking changes
 
+* **`getBLSFiles()` now uses one join engine for every source.** The
+  hand-maintained per-source lookup list that served `cpi`, `eci`, `jolts`,
+  `ces`, `ces_allemp`, `ces_total`, `averageprice`, `food`, `sae` and `laus`
+  is gone; all ten now go through the same derived-key engine as everything
+  else. The practical effect is that they join every lookup BLS publishes for
+  the survey rather than a curated subset, so each gains columns: all ten gain
+  `seasonal_text`, CPI also gains `base_text` and `periodicity_text`, ECI gains
+  `area_*`, and JOLTS gains `area_*` and `ratelevel_*`. No column was renamed
+  or dropped. Verified live, before and after, for all ten: row counts, `value`
+  sums, the series universe, and per-column NA counts are identical
+  (`verification/capture.R` and `compare.R` re-run the diff).
+* **Column types changed.** Every BLS file is now read as all-character and
+  then selectively re-typed, instead of letting `readr` guess per column. Codes
+  that readr used to guess as numeric are now character, which is the point: a
+  code like `"0000"` no longer becomes `0`. `year`, `begin_year`, `end_year`,
+  `*_display_level` and `*_sort_sequence` are integer; `*_selectable` is
+  logical; `value` is numeric. Anything else is character. `display_level` is
+  the one to watch: as character it compares lexically, so it is deliberately
+  re-typed to integer and a hierarchy filter still sorts numerically.
+* **BLS-computed average rows are dated the last day of their period.** `M13`
+  is now `YYYY-12-31` rather than `YYYY-12-01`, `S01` is `YYYY-06-30`, and
+  `S02`/`S03`/`Q05`/`A01` are `YYYY-12-31`. Observed values (`M01`-`M12`,
+  `Q01`-`Q04`) are unchanged on the first of the month. Previously an annual
+  average shared a `Date` with the real December observation for the same
+  series, so `group_by(date)` across many series double-counted silently. It
+  now cannot: no computed average shares a date with an observed value.
+  Averages still share a date with each other, which `is_average` or `freq`
+  separates. Only affects rows where `is_average` is `TRUE`.
+* `getCPIAspects()` gained `freq` and `is_average` columns, and its dates now
+  come from the shared period parser. Additive; positional column indexing
+  will shift.
 * `getBLSFiles("se", ...)` and `getBLSFiles("su", ...)` now warn on every call
   and redirect to the new canonical names `"sae"` and `"laus"`. The old names
   still work and return the same data (`se` was never a real BLS prefix;
@@ -15,6 +46,41 @@
   does `names(df)[n]` positionally will see the shift.
 
 ## Bug fixes and improvements
+
+* **`getCPIAspects()` had the same period-parsing bug `getBLSFiles()` did**, and
+  it was missed when that was fixed. It computed `date` as
+  `substr(period, 2, 3)`, and `build_weight_bases()` computed the month index
+  the same way, so an `M13` relative-importance row would have been treated as
+  January of the following year, shifting the CPI weight panel. The uniqueness
+  check would not have caught it, because month 13 collides with no real month.
+  Verified live 2026-08-31 that `cu.aspect` publishes only `M01`-`M12` for
+  every aspect type, so no published weight was ever wrong; this closes the
+  trap rather than fixing a live error. Both now use the shared parser, and
+  `build_weight_bases()` explicitly keeps observed monthly rows only.
+* **All BLS downloads now retry.** Every request goes through `httr::RETRY`
+  with an HTTP/1.1 fallback for transport-level resets and a hard status check,
+  matching the hardening `getFRED()` already had. This covers the directory
+  listing, the lookup tables, the main data file and `cu.aspect`. Previously a
+  single transient failure aborted the call, which is a poor property for a
+  script that runs at 8:31am on a release day. The contact email is now passed
+  as an explicit `User-Agent` rather than through the process-global
+  `options(HTTPUserAgent=)`; BLS returns 403 without it.
+* **Release-day pulls no longer depend on scraping BLS's HTML directory
+  listing.** `bls_registry()` now pins the lookup file list for every tier 1
+  source, so `getBLSFiles()` can build the fully labeled series table without
+  the listing. The listing is still used for the `max_mb` size guard, but its
+  failure is now a warning with a `HEAD`-request fallback rather than a fatal
+  error. Sources outside tier 1 still discover their lookups from the listing.
+* Fixed an unhelpful failure on the discontinued (tier 4) surveys. They have no
+  default data file, and the `NA` fell through to a subset that returned
+  NA-filled rows, so the call died with `missing value where TRUE/FALSE needed`
+  after a wasted round trip. It now errors immediately with the `blsFiles()`
+  call that lists what the survey still publishes.
+* `include_averages = FALSE` now errors on a source that publishes nothing but
+  averages (CEX, which publishes only `A01`) instead of silently returning zero
+  rows.
+* `getBLSFiles()` now reports how many `value` entries were non-numeric and
+  became `NA`, rather than converting silently.
 
 * **Fixed silently wrong dates for BLS period codes other than plain
   monthly/quarterly.** `getBLSFiles()` computed `date` as

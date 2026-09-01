@@ -61,21 +61,15 @@ exist. Set \code{FALSE} to drop them, e.g. before a \code{group_by(date)}
 across many series where an average row would otherwise land on the same
 December date as that year's real December observation.}
 
-\item{file}{Character, optional. Only used for \code{"derived"}-engine
-sources (see \code{blsSources()$join_engine}); picks a non-default data
-file within that survey, e.g. \code{file = "data.21.Aggregates"} for
-PPI's FD-ID aggregates. Call \code{\link{blsFiles}(data_source, email)}
-to see what exists. Ignored (with a warning if non-NULL) for
-\code{"legacy"}-engine sources, whose lookup joins are tied to their
-default file: \code{cpi}, \code{eci}, \code{jolts}, \code{ces},
-\code{ces_allemp}, \code{ces_total}, \code{averageprice}, \code{food},
-\code{sae}, \code{laus}.}
+\item{file}{Character, optional. Picks a non-default data file within the
+survey, e.g. \code{file = "data.21.Aggregates"} for PPI's FD-ID
+aggregates. Call \code{\link{blsFiles}(data_source, email)} to see what
+exists. Required for the discontinued (tier 4) surveys, which have no
+default file.}
 
-\item{max_mb}{Numeric, default 500. For \code{"derived"}-engine sources
-only: refuse to download a data file larger than this without an
-explicit override (e.g. \code{osh_characteristics} is 2.9 GB). Set
-\code{Inf} to disable. Ignored for \code{"legacy"}-engine sources (see
-\code{file} above).}
+\item{max_mb}{Numeric, default 500. Refuse to download a data file larger
+than this without an explicit override (e.g. \code{osh_characteristics}
+is 2.9 GB). Set \code{Inf} to disable.}
 }
 \value{
 A tibble containing the merged data with columns for:
@@ -127,6 +121,30 @@ became a silent \code{NA}. Verified on \code{cu.data.1.AllItems}
 (2026-08-19): 26\\% of rows were affected. This version uses one parser for
 every period code (see \code{is_average} above) and gives every row a
 correct date.
+
+The month is the \emph{end} of the period, matching the pre-existing ECI
+convention (\code{Q01} is March). Annual and half-year rows land in the last
+month they cover: \code{M13}/\code{S03}/\code{Q05}/\code{A01} in December,
+\code{S01} in June.
+
+The \emph{day} separates observed values from computed averages. An observed
+value is dated the \strong{first} of its month, matching every other date
+this package returns (\code{\link{getFRED}}, \code{\link{getNIPAFiles}}). A
+computed average is dated the \strong{last day} of its terminal month:
+\code{2024-12-31} for \code{M13}, \code{2024-06-30} for \code{S01}.
+
+That rule exists because the month alone cannot separate them. There is no
+month an annual average can occupy that some observed month does not already
+own, so under a uniform first-of-month rule the 2024 annual average and the
+real December 2024 observation are the same \code{Date}, and a
+\code{group_by(date)} across many series double-counts silently. With the day
+rule that is impossible rather than merely documented.
+
+Averages still share a date with each \emph{other}: \code{M13}, \code{S02}
+and \code{S03} all land on December 31. They are all averages, so
+\code{is_average} or \code{freq} separates them and no observed value is ever
+contaminated. The full key is \code{(series_id, date, freq)}, not
+\code{date} alone.
 }
 
 \section{CPI relative importance}{

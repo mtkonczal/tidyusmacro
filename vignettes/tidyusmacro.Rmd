@@ -50,10 +50,15 @@ ppi_data <- getBLSFiles("ppi", "user@example.com")
 
 Every source carries `freq` (`"monthly"`, `"quarterly"`, `"semiannual"`, or
 `"annual"`) and `is_average` (`TRUE` for BLS-computed rows like the `M13`
-annual average, which lands on December of that year, the same date as the
-real December observation). These are not dropped by default -- pass
-`include_averages = FALSE` to drop them, e.g. before grouping by date across
-many series.
+annual average or the `S01` half-year average).
+
+Observed values are dated the first of their month. Computed averages are
+dated the *last* day of the period they cover: `M13` for 2024 is `2024-12-31`,
+`S01` is `2024-06-30`. That keeps an annual average off the same date as the
+real December observation, so grouping by date across many series cannot
+silently double-count. Averages do share a date with each other, so use
+`is_average` or `freq` when you need to separate them, and pass
+`include_averages = FALSE` to drop them outright.
 
 CPI arrives with monthly relative importance already attached, from BLS's
 `cu.aspect` file: `weight`, the base for the observation month's 1-month

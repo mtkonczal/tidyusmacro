@@ -12,33 +12,65 @@ This file contains context and guidance for Claude Code when working on this pro
 ## Key Architecture Decisions
 
 ### getBLSFiles Structure
-- Two source families, `blsSources()$join_engine`:
-  - `"legacy"`: 10 sources (`cpi`, `eci`, `jolts`, `ces`, `ces_allemp`,
-    `ces_total`, `averageprice`, `food`, `sae`, `laus`). Lookup joins are
-    hand-mapped per source in `R/getBLSFiles.R`, unchanged since before the
-    2026-08 registry refactor.
-  - `"derived"`: every source added since, plus `cex` and `cps` (moved off
-    the legacy list 2026-08-31 to fix the lookup gaps in
-    BLS_COVERAGE_PLAN.md section 2.3: CEX was missing `cx.subcategory`, and
-    CPS joined 7 lookups by hand where `ln` publishes far more). Lookup
-    joins are derived by column-name intersection in
-    `R/bls-join.R::bls_build_series()` — the key is any `*_code` column
-    shared between a lookup file and `series`, which also auto-detects
-    compound keys (e.g. `wp.item` on `(group_code, item_code)`, or CEX's
-    `characteristics` on `(demographics_code, characteristics_code)` and
-    `item` on `(subcategory_code, item_code)`). New sources normally need
-    only a `bls_registry()` row in `R/bls-registry.R`, not new join code.
+- **One join engine.** `bls_build_series()` (`R/bls-join.R`) derives each
+  lookup's join key by column-name intersection with `series`: the key is any
+  `*_code` column shared between a lookup file and `series`. It auto-detects
+  compound keys (e.g. `wp.item` on `(group_code, item_code)`, CEX's
+  `characteristics` on `(demographics_code, characteristics_code)`) and it
+  subsumes the two exceptions the old hand-mapped list carried (`ce.datatype`
+  keys on `data_type_code`, `la.state_region_division` on `srd_code`) without
+  being told, because it reads column names rather than file stems. Adding a
+  source is a `bls_registry()` row, not new join code.
+- The hand-mapped `legacy` engine that served the original ten sources was
+  deleted 2026-08-31 after a live before/after diff over all ten confirmed the
+  derived rule reproduces it. That diff lives in `verification/` (gitignored);
+  `verification/capture.R` and `compare.R` re-run it.
+- **Pinned lookups.** `bls_registry()$lookups` pins the lookup stems for every
+  tier 1 source, captured live 2026-08-31. When pinned, `getBLSFiles()` does
+  not need the BLS HTML directory listing to discover lookups, so a change to
+  that page cannot take down a release-day pull; the listing is then used only
+  for the `max_mb` size guard and its failure downgrades to a warning. Refresh
+  with `bls_lookup_candidates(bls_list_files(prefix, email))$stem`.
+- **All-character reads, then selective re-typing.** `bls_read()` forces
+  `col_character` so a code like `"0000"` never becomes `0`. `bls_retype()`
+  (`R/bls-types.R`) then restores integer/logical types to the short list of
+  columns that are genuinely typed: `year`, `*_display_level`,
+  `*_sort_sequence`, `*_selectable`. This matters most for `display_level`,
+  which drives hierarchy filtering: as character it compares lexically, so
+  `"10" < "2"` is TRUE and a filter silently keeps the wrong rows. Coercion is
+  skipped for any column where it would introduce NAs.
+- All BLS HTTP goes through `bls_get()` (`R/bls-fetch.R`): `httr::RETRY`,
+  an HTTP/1.1 fallback for transport resets, and a hard status check. BLS
+  returns 403 to any request without a contact email in the User-Agent
+  (verified 2026-08-31), so the UA is passed explicitly rather than through
+  `options(HTTPUserAgent=)`.
 - Metadata columns (`display_level`, `selectable`, `sort_sequence`) are renamed with file prefixes to avoid collisions
 - `display_level` is important for hierarchy filtering (keep it, don't drop)
 - `se`/`su` are deprecated aliases for `sae`/`laus` (warn on use); `su` is a
   real BLS prefix (Chained CPI), which the old alias was squatting on. See
   `bls_deprecated_aliases` in `R/bls-registry.R`.
-- Period parsing (`R/bls-period.R::bls_parse_period()`) is shared across all
-  sources. BLS period codes are not all monthly/quarterly: `M13`, `S01`,
-  `S02`, `S03`, and `Q05` are BLS-computed averages, flagged via `is_average`
-  and landing on December of that year (same date as a real Q4/M12 row for
-  the same series — expected, not a join bug). Not dropped by default
-  (`include_averages = TRUE`): CEX publishes nothing but `A01`.
+
+### Period parsing
+`R/bls-period.R::bls_parse_period()` is shared by `getBLSFiles()` and
+`getCPIAspects()`. BLS period codes are not all monthly/quarterly: `M13`,
+`S01`, `S02`, `S03`, and `Q05` are BLS-computed averages, flagged via
+`is_average`.
+
+- **Month** is the end of the period (`Q01` -> March). Averages land in the
+  last month they cover: `M13`/`S03`/`Q05`/`A01` in December, `S01` in June.
+- **Day** separates observed from computed. Observed values are dated the
+  first of the month, matching `getFRED`/`getNIPAFiles`. Averages are dated the
+  last day of their terminal month (`2024-12-31` for `M13`, `2024-06-30` for
+  `S01`). Without this an annual average shares a `Date` with the real December
+  observation and a stray `group_by(date)` double-counts silently; there is no
+  month an average can occupy that an observed month does not already own, so
+  the day is the only free dimension.
+- Averages still share a date with each other (`M13`, `S02`, `S03` all land on
+  December 31). Deliberate: they are all averages, so `is_average`/`freq`
+  separates them. The full key is `(series_id, date, freq)`.
+- Not dropped by default (`include_averages = TRUE`): CEX publishes nothing but
+  `A01`. Passing `FALSE` on such a source now errors rather than returning zero
+  rows.
 
 ### Pipe Operators
 - Currently mixed usage of `%>%` (magrittr) and `|>` (base R)
@@ -119,15 +151,15 @@ pkgdown::build_site()
 ### BLS File Mappings
 Full, current list: `blsSources()`. A few representative examples:
 
-| Source | Prefix | Data File | Join engine | Key Auxiliary Files |
-|--------|--------|-----------|-------------|---------------------|
-| cpi | cu | data.0.Current | legacy | series, item, area |
-| eci | ci | data.1.AllData | legacy | series, industry, owner, occupation |
-| jolts | jt | data.1.AllItems | legacy | series, industry, state, dataelement, sizeclass |
-| ces | ce | data.0.AllCESSeries | legacy | series, datatype, supersector, industry |
-| cps | ln | data.1.AllData | derived | series, plus ~35 auto-joined lookups (was 7, hand-mapped, before 2026-08-31) |
-| cex | cx | data.1.AllData | derived | series, category, characteristics, demographics, item, subcategory |
-| ppi | wp | data.0.Current | derived | series, group, item (compound key), seasonal |
+| Source | Prefix | Data File | Key Auxiliary Files |
+|--------|--------|-----------|---------------------|
+| cpi | cu | data.0.Current | series, item, area, base, periodicity, seasonal |
+| eci | ci | data.1.AllData | series, industry, owner, occupation, subcell, estimate, periodicity, area, seasonal |
+| jolts | jt | data.1.AllItems | series, industry, state, dataelement, sizeclass, area, ratelevel, seasonal |
+| ces | ce | data.0.AllCESSeries | series, datatype, supersector, industry, seasonal |
+| cps | ln | data.1.AllData | series, plus 35 lookups |
+| cex | cx | data.1.AllData | series, category, characteristics, demographics, item, subcategory, process |
+| ppi | wp | data.0.Current | series, group, item (compound key), seasonal |
 
 ### BLS Flat File URL Pattern
 ```

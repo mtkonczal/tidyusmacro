@@ -1,9 +1,7 @@
-# Derived-key join engine for BLS lookup tables, used by getBLSFiles() for
-# every source added via the registry (see R/bls-registry.R). The 12 sources
-# that predate this file keep their original hand-maintained join list in
-# getBLSFiles() unchanged, so their output is byte-identical apart from the
-# period fix; this engine is what makes adding new sources not require a new
-# hardcoded join list per source.
+# Derived-key join engine for BLS lookup tables. Every source goes through
+# this; the hand-maintained per-source key list that used to serve the original
+# ten was deleted once a live before/after diff confirmed this engine
+# reproduces it (see verification/, and NEWS.md).
 #
 # The rule, validated 2026-08-19 against every lookup file in all 65 BLS
 # survey directories (see recommendations.md section 4): the join key is
@@ -11,7 +9,10 @@
 # .series file. That produced a valid key for 474 lookup joins and
 # auto-detected 30 compound keys a "{file}_code" rule gets wrong, e.g.
 # wp.item = (group_code, item_code) and pc.product = (industry_code,
-# product_code).
+# product_code). It also subsumes the two exceptions the old hand-mapped list
+# carried, ce.datatype (keys on data_type_code) and la.state_region_division
+# (keys on srd_code), without being told about either: the rule reads column
+# names, not file stems.
 
 # Lookups that must never be auto-joined to series:
 #   aspect    a separate data file (cu.aspect alone is 31 MB), not a lookup
@@ -40,9 +41,14 @@ bls_lookup_candidates <- function(files, max_mb = 10) {
 }
 
 # Build the fully-labeled series table: series + every derivable lookup.
-bls_build_series <- function(prefix, email, files = NULL, verbose = TRUE) {
-  if (is.null(files)) files <- bls_list_files(prefix, email)
-
+#
+# `lookups` pins the lookup stems explicitly (from bls_registry()$lookups) and
+# makes the directory listing unnecessary. That matters on release day: without
+# it, every pull depends on scraping BLS's HTML autoindex, and a change to that
+# page would take down CPI and CES at 8:30am. With it, the listing is used only
+# for the size guard, and its failure is recoverable.
+bls_build_series <- function(prefix, email, files = NULL, lookups = NULL,
+                             lookup_max_mb = 10, verbose = TRUE) {
   if (verbose) message("Downloading series file...")
   series <- bls_read(prefix, "series", email)
   names(series) <- trimws(names(series))
@@ -51,10 +57,16 @@ bls_build_series <- function(prefix, email, files = NULL, verbose = TRUE) {
     if (is.character(series[[nm]])) series[[nm]] <- trimws(series[[nm]])
   }
 
-  cand <- bls_lookup_candidates(files)
+  if (!is.null(lookups)) {
+    stems <- lookups
+  } else {
+    if (is.null(files)) files <- bls_list_files(prefix, email)
+    stems <- bls_lookup_candidates(files, max_mb = lookup_max_mb)$stem
+  }
 
-  for (i in seq_len(nrow(cand))) {
-    stem <- cand$stem[i]
+  joined <- character(0)
+
+  for (stem in stems) {
     tmp <- tryCatch(bls_read(prefix, stem, email), error = function(e) NULL)
     if (is.null(tmp) || !nrow(tmp)) {
       if (verbose) message("  skip ", stem, ": unreadable")
@@ -103,7 +115,9 @@ bls_build_series <- function(prefix, email, files = NULL, verbose = TRUE) {
 
     if (verbose) message("  join ", stem, " on (", paste(key, collapse = ", "), ")")
     series <- dplyr::left_join(series, tmp, by = key, relationship = "many-to-one")
+    joined <- c(joined, stem)
   }
 
+  attr(series, "bls_lookups_joined") <- joined
   series
 }
